@@ -721,7 +721,7 @@ df["2万円で1株"] = df["円換算価格"].apply(lambda x: "○" if pd.notna(x
 df["2万円で買える株数"] = df["円換算価格"].apply(lambda x: int(20000 // x) if pd.notna(x) and x > 0 else 0)
 
 
-tabs = st.tabs(["🏠 ホーム", "🌍 世界50", "🔎 個別分析", "⭐ お気に入り", "💼 保有株", "💴 月2万円"])
+tabs = st.tabs(["🏠 ホーム", "🌍 世界50", "🔎 個別分析", "⭐ お気に入り", "💼 保有株",  "💰 予算で探す"])
 
 
 # ------------------------------
@@ -1176,14 +1176,14 @@ with tabs[4]:
 # ------------------------------
 with tabs[5]:
     budget = st.number_input(
-        "今月の予算",
+        "投資予算",
         min_value=0,
         value=MONTHLY_BUDGET_DEFAULT,
         step=1000,
     )
 
     buyable = df[(df["円換算価格"].notna()) & (df["円換算価格"] <= budget)].copy()
-    st.metric("1株買える企業", len(buyable))
+    st.metric("予算内で1株買える企業", len(buyable))
     st.caption("これは『予算内で1株買えるか』の表示で、買い推奨ではありません。")
 
     if not buyable.empty:
