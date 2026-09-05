@@ -24,7 +24,49 @@ div[data-testid="stMetric"] {
 .atlas-title {font-size: 2.4rem; font-weight: 800; letter-spacing: -0.04em;}
 .atlas-sub {opacity:.68; margin-top:-8px; margin-bottom:18px;}
 .badge {display:inline-block; padding:4px 9px; border-radius:999px; font-size:.85rem; border:1px solid rgba(120,120,120,.25);}
-</style>
+@media (max-width: 768px) {
+    .block-container {
+        padding-top: 0.8rem;
+        padding-left: 0.8rem;
+        padding-right: 0.8rem;
+        padding-bottom: 2rem;
+    }
+
+    .atlas-title {
+        font-size: 1.8em;
+        line-height: 1.15;
+    }
+
+    .atlas-sub {
+        font-size: 0.92em;
+        margin-bottom: 12px;
+    }
+
+    div[data-testid="stMetric"] {
+        padding: 10px 10px;
+        border-radius: 12px;
+    }
+
+    div[data-testid="stMetricValue"] {
+        font-size: 1.45rem;
+    }
+
+    div[data-testid="stMetricLabel"] {
+        font-size: 0.82rem;
+    }
+
+    [data-testid="stHorizontalBlock"] {
+        gap: 0.5rem;
+    }
+
+    .stDataFrame {
+        overflow-x: auto;
+    }
+
+    button {
+        min-height: 42px;
+    }
+}</style>
 """, unsafe_allow_html=True)
 
 def _extract_one(raw, ticker):
