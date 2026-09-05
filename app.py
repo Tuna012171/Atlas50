@@ -248,26 +248,68 @@ def load_data():
     return df,histories,errors
 
 @st.cache_data(ttl=1800, show_spinner=False)
-def load_news(ticker):
+def load_news(ticker, company_name=""):
     items = []
+
     try:
         raw = yf.Ticker(ticker).news or []
-        for n in raw[:8]:
+
+        company_text = str(company_name or "").lower()
+
+        ignore_words = {
+            "inc", "corp", "corporation", "group",
+            "holdings", "plc", "ltd", "company", "the", "fg"
+        }
+
+        keywords = [
+            word.lower()
+            for word in company_text.replace("&", " ").split()
+            if len(word) >= 3 and word.lower() not in ignore_words
+        ]
+
+        for n in raw[:20]:
             content = n.get("content", n)
+
             title = content.get("title") or n.get("title")
+            summary = content.get("summary") or n.get("summary") or ""
+
+            if not title:
+                continue
+
+            search_text = f"{title} {summary}".lower()
+
+            # 選択した会社に関係するニュースだけ残す
+            if keywords and not any(word in search_text for word in keywords):
+                continue
+
             provider = content.get("provider", {})
-            publisher = provider.get("displayName") if isinstance(provider,dict) else n.get("publisher")
+            publisher = (
+                provider.get("displayName")
+                if isinstance(provider, dict)
+                else n.get("publisher")
+            )
+
             link = None
             canonical = content.get("canonicalUrl")
-            if isinstance(canonical,dict):
+
+            if isinstance(canonical, dict):
                 link = canonical.get("url")
+
             link = link or n.get("link")
-            if title:
-                items.append({"title":title,"publisher":publisher or "News","link":link})
+
+            items.append({
+                "title": title,
+                "publisher": publisher or "News",
+                "link": link
+            })
+
+            if len(items) >= 6:
+                break
+
     except Exception:
         pass
-    return items
 
+    return items
 if "favorites" not in st.session_state:
     st.session_state.favorites = set()
 if "portfolio" not in st.session_state:
@@ -419,7 +461,7 @@ with tabs[2]:
     st.bar_chart(parts_df.set_index("項目")["点数"])
     st.subheader("🔥 なぜ今注目？")
 
-    news_preview = load_news(t)
+   news_preview = load_news(t, selected)
     reasons = []
 
     if score >= 80:
