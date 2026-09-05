@@ -971,36 +971,62 @@ with tabs[2]:
     news_preview = load_news(t, selected)
     reasons = []
 
-    if score >= 80:
-        reasons.append(f"Atlas Scoreが{score:.0f}と高く、現在の注目度はかなり高めです")
-    elif score >= 65:
-        reasons.append(f"Atlas Scoreが{score:.0f}で、中〜高水準の注目度です")
+# Atlas Scoreから現在の注目度を説明
+if score >= 80:
+    reasons.append("複数の指標が強く、Atlas上では現在かなり注目度が高い状態です")
+elif score >= 65:
+    reasons.append("複数の指標が比較的良好で、Atlas上では注目度が高めです")
 
-    if one_month is not None:
-        if one_month >= 5:
-            reasons.append(f"直近1か月で +{one_month:.1f}% 上昇しています")
-        elif one_month <= -5:
-            reasons.append(f"直近1か月で {one_month:.1f}% 下落しており、短期の値動きには注意が必要です")
+# 短期〜長期の流れをまとめて説明
+trend_values = [one_month, three_month, six_month, one_year]
 
-    if three_month is not None and three_month >= 10:
-        reasons.append(f"直近3か月では +{three_month:.1f}% と強い動きです")
+if all(v is not None and v > 0 for v in trend_values):
+    reasons.append("短期から長期まで上昇基調がそろっており、幅広い期間で強さが見られます")
 
-    if six_month is not None:
-        if six_month >= 15:
-            reasons.append(f"直近6か月では +{six_month:.1f}% と中期でも上向きです")
-        elif six_month <= -15:
-            reasons.append(f"直近6か月では {six_month:.1f}% と中期では弱い動きです")
+elif (
+    one_month is not None
+    and three_month is not None
+    and six_month is not None
+    and one_month > 0
+    and three_month > 0
+    and six_month > 0
+):
+    reasons.append("直近半年は上向きの流れが続いており、中期的な勢いが見られます")
 
-    if one_year is not None:
-        if one_year >= 25:
-            reasons.append(f"直近1年では +{one_year:.1f}% と長期でも強い推移です")
-        elif one_year <= -25:
-            reasons.append(f"直近1年では {one_year:.1f}% と長期では下落が目立ちます")
+elif (
+    one_month is not None
+    and three_month is not None
+    and one_month > 0
+    and three_month < 0
+):
+    reasons.append("足元では反発していますが、中期ではまだ回復途中の動きです")
+
+elif (
+    one_month is not None
+    and six_month is not None
+    and one_year is not None
+    and one_month < 0
+    and six_month > 0
+    and one_year > 0
+):
+    reasons.append("中長期では上向きですが、直近は一時的な調整局面に入っています")
+
+elif (
+    one_month is not None
+    and three_month is not None
+    and one_month < 0
+    and three_month < 0
+):
+    reasons.append("短期から中期では弱い動きが続いており、勢いの鈍化に注意が必要です")
+
+# 値動きが特に大きい場合
+if one_month is not None and abs(one_month) >= 15:
+    reasons.append("直近1か月の値動きが大きく、市場の注目が集まりやすい状態です")
 
     if news_preview:
-        headline = news_preview[0].get("title")
-        if headline:
-            reasons.append(f"最近の注目ニュース：{headline}")
+    reasons.append(
+        "最近の関連ニュースも出ており、値動きと合わせて確認したい局面です"
+    )
 
     if reasons:
         st.info(
