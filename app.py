@@ -461,7 +461,7 @@ with tabs[2]:
     st.bar_chart(parts_df.set_index("項目")["点数"])
     st.subheader("🔥 なぜ今注目？")
 
-   news_preview = load_news(t, selected)
+    news_preview = load_news(t, selected)
     reasons = []
 
     if score >= 80:
