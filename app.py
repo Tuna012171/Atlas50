@@ -304,7 +304,7 @@ with tabs[0]:
     top = df.head(10)[["順位","会社名","国","業種","円換算価格","1か月","3か月","Atlas Score","判定"]].copy()
     top["1か月"] = (top["1か月"]*100).round(2)
     top["3か月"] = (top["3か月"]*100).round(2)
-   st.dataframe(top,use_container_width=True,hide_index=True,column_config={
+    st.dataframe(top,use_container_width=True,hide_index=True,column_config={
         "円換算価格":st.column_config.NumberColumn(format="¥%.0f"),
         "1か月":st.column_config.NumberColumn(format="%.2f%%"),
         "3か月":st.column_config.NumberColumn(format="%.2f%%"),
