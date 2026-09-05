@@ -818,7 +818,7 @@ with tabs[1]:
         view = view[view["業種"] == sector]
     view = view[view["Atlas Score"] >= minscore]
 
-   show = view[
+    show = view[
     [
         "順位",
         "会社名",
