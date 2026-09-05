@@ -514,15 +514,6 @@ with tabs[2]:
         if t in st.session_state.favorites: st.session_state.favorites.remove(t)
         else: st.session_state.favorites.add(t)
 
-    st.subheader("1年チャート")
-    hist = histories.get(t)
-    if hist is not None and not hist.empty:
-        st.line_chart(hist[["Close","SMA20","SMA60"]])
-
-    st.subheader("Scoreの内訳")
-    parts = row["Score内訳"]
-    parts_df = pd.DataFrame({"項目":list(parts.keys()),"点数":list(parts.values())})
-    st.bar_chart(parts_df.set_index("項目")["点数"])
     st.subheader("🔥 なぜ今注目？")
 
     news_preview = load_news(t, selected)
