@@ -797,12 +797,7 @@ with tabs[0]:
             "Atlas Score": st.column_config.ProgressColumn(min_value=0, max_value=100, format="%.0f"),
         },
     )
-    st.markdown("### 📊 TOP10のAtlas Score比較")
-    st.caption("上位10銘柄の注目度を、Scoreで比較できます。")
-    st.bar_chart(df.head(10).set_index("会社名")["Atlas Score"])
-    
-
-
+ 
 # ------------------------------
 # 世界50
 # ------------------------------
