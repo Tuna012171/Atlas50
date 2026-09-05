@@ -66,7 +66,55 @@ div[data-testid="stMetric"] {
     button {
         min-height: 42px;
     }
-}</style>
+
+
+/* ここにカード用CSSを追加 */
+
+.mobile-stock-card {
+    border: 1px solid rgba(120,120,120,.20);
+    border-radius: 14px;
+    padding: 14px;
+    margin-bottom: 10px;
+}
+
+.mobile-rank {
+    font-size: 0.85rem;
+    opacity: 0.65;
+}
+
+.mobile-company {
+    font-size: 1.1rem;
+    font-weight: 700;
+    margin-top: 2px;
+}
+
+.mobile-meta {
+    font-size: 0.85rem;
+    opacity: 0.7;
+    margin-top: 2px;
+}
+
+.mobile-score {
+    font-size: 1rem;
+    font-weight: 700;
+    margin-top: 10px;
+}
+
+.mobile-stats {
+    font-size: 0.88rem;
+    margin-top: 4px;
+}
+
+.mobile-judge {
+    display: inline-block;
+    margin-top: 8px;
+    padding: 3px 8px;
+    border-radius: 999px;
+    border: 1px solid rgba(120,120,120,.25);
+    font-size: 0.8rem;
+}
+}
+</style>
 """, unsafe_allow_html=True)
 
 def _extract_one(raw, ticker):
@@ -269,7 +317,28 @@ with tabs[1]:
         "1か月":st.column_config.NumberColumn(format="%.2f%%"),"3か月":st.column_config.NumberColumn(format="%.2f%%"),
         "Atlas Score":st.column_config.ProgressColumn(min_value=0,max_value=100,format="%.0f")
     })
+st.markdown("### スマホ向け一覧")
 
+for _, row in view.iterrows():
+    score = int(row["Atlas Score"])
+    one_month = row["1カ月"] * 100
+    three_month = row["3カ月"] * 100
+
+    st.markdown(
+        f"""
+        <div class="mobile-stock-card">
+            <div class="mobile-rank">#{int(row['順位'])}</div>
+            <div class="mobile-company">{row['会社名']}</div>
+            <div class="mobile-meta">{row['国']} ・ {row['業種']}</div>
+            <div class="mobile-score">Atlas Score {score}</div>
+            <div class="mobile-stats">
+                1カ月 {one_month:.2f}% ｜ 3カ月 {three_month:.2f}%
+            </div>
+            <div class="mobile-judge">{row['判定']}</div>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
 with tabs[2]:
     selected = st.selectbox("会社を選ぶ",df["会社名"].tolist(),key="detail_company")
     row = df[df["会社名"]==selected].iloc[0]
