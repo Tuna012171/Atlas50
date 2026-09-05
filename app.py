@@ -290,13 +290,21 @@ def load_news(ticker, company_name=""):
             )
 
             link = None
-            canonical = content.get("canonicalUrl")
 
-            if isinstance(canonical, dict):
-                link = canonical.get("url")
+            link_candidates = [
+                content.get("clickThroughUrl"),
+                content.get("canonicalUrl"),
+                content.get("financeUrl"),
+                n.get("link"),
+            ]
 
-            link = link or n.get("link")
+            for candidate in link_candidates:
+                if isinstance(candidate, dict):
+                    candidate = candidate.get("url")
 
+                if isinstance(candidate, str) and candidate:
+                    link = candidate
+                    break
             items.append({
                 "title": title,
                 "publisher": publisher or "News",
