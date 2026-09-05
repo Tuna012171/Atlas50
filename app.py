@@ -131,6 +131,13 @@ div[data-testid="stMetric"] {
     display: none;
 }
 
+@media (min-width: 769px) {
+    div[data-testid="stElementContainer"]:has(.mobile-list-title),
+    div[data-testid="stElementContainer"]:has(.mobile-stock-card) {
+        display: none !important;
+    }    
+}
+
 @media (max-width: 768px) {
     .mobile-list-title,
     .mobile-stock-card {
