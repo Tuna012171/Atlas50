@@ -927,25 +927,22 @@ with tabs[1]:
     )
 
     # スマホ用カードは1回のHTML描画にまとめる。
-    # PCで非表示にしてもStreamlit要素50個分の余白が残らない。
+    # MarkdownにHTMLを渡す際、行頭の空白がコードブロック扱いされないよう
+    # HTML文字列はインデントなしで組み立てる。
     mobile_cards = []
     for _, mobile_row in show.iterrows():
         mobile_cards.append(
-            f"""
-            <div class="mobile-stock-card">
-                <div class="mobile-rank">#{int(mobile_row['順位'])}</div>
-                <div class="mobile-company">{html.escape(str(mobile_row['会社名']))}</div>
-                <div class="mobile-meta">
-                    {html.escape(str(mobile_row['国']))} ・ {html.escape(str(mobile_row['業種']))}
-                </div>
-                <div class="mobile-score">Atlas Score {int(mobile_row['Atlas Score'])}</div>
-                <div class="mobile-stats">
-                    1か月 {_pct_number_text(mobile_row['1か月'])} ｜ 3か月 {_pct_number_text(mobile_row['3か月'])}<br>
-                    6か月 {_pct_number_text(mobile_row['6か月'])} ｜ 1年 {_pct_number_text(mobile_row['1年'])}
-                </div>
-                <div class="mobile-judge">{html.escape(str(mobile_row['判定']))}</div>
-            </div>
-            """
+            "<div class=\"mobile-stock-card\">"
+            f"<div class=\"mobile-rank\">#{int(mobile_row['順位'])}</div>"
+            f"<div class=\"mobile-company\">{html.escape(str(mobile_row['会社名']))}</div>"
+            f"<div class=\"mobile-meta\">{html.escape(str(mobile_row['国']))} ・ {html.escape(str(mobile_row['業種']))}</div>"
+            f"<div class=\"mobile-score\">Atlas Score {int(mobile_row['Atlas Score'])}</div>"
+            "<div class=\"mobile-stats\">"
+            f"1か月 {_pct_number_text(mobile_row['1か月'])} ｜ 3か月 {_pct_number_text(mobile_row['3か月'])}<br>"
+            f"6か月 {_pct_number_text(mobile_row['6か月'])} ｜ 1年 {_pct_number_text(mobile_row['1年'])}"
+            "</div>"
+            f"<div class=\"mobile-judge\">{html.escape(str(mobile_row['判定']))}</div>"
+            "</div>"
         )
 
     mobile_html = (
@@ -955,6 +952,7 @@ with tabs[1]:
         + "</div>"
     )
     st.markdown(mobile_html, unsafe_allow_html=True)
+
 
 
 # ------------------------------
