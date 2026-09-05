@@ -334,12 +334,12 @@ with tabs[1]:
         "1か月":st.column_config.NumberColumn(format="%.2f%%"),"3か月":st.column_config.NumberColumn(format="%.2f%%"),
         "Atlas Score":st.column_config.ProgressColumn(min_value=0,max_value=100,format="%.0f")
     })
-st.markdown(
+    st.markdown(
     '<div class="mobile-list-title">スマホ向け一覧</div>',
     unsafe_allow_html=True
-)
+    )
 
-for _, row in show.iterrows():
+    for _, row in show.iterrows():
     score = int(row["Atlas Score"])
     one_month = row["1か月"] 
     three_month = row["3か月"] 
