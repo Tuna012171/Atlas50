@@ -2,6 +2,7 @@ import html
 import time
 import json
 
+import altair as alt
 import pandas as pd
 import streamlit as st
 import yfinance as yf
@@ -138,11 +139,79 @@ div[data-testid="stMetric"] {
 }
 
 /*
-スマホ用一覧は1つのHTMLブロックにまとめる。
-PCではブロック全体を非表示にするため、50件分の空白が残らない。
+スマホ専用UIはStreamlitコンテナ単位で切り替える。
+HTML要素だけを隠す方式より、不要な空白が残りにくい。
 */
 .mobile-list-wrap {
     display: none;
+}
+
+.st-key-compare_mobile {
+    display: none;
+}
+
+.compare-card {
+    border: 1px solid rgba(120, 120, 120, 0.20);
+    border-radius: 14px;
+    padding: 14px;
+    margin-bottom: 10px;
+}
+
+.compare-card-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 10px;
+}
+
+.compare-card-company {
+    font-size: 1.05rem;
+    font-weight: 750;
+}
+
+.compare-card-meta {
+    font-size: 0.82rem;
+    opacity: 0.68;
+    margin-top: 2px;
+}
+
+.compare-card-score {
+    font-size: 1rem;
+    font-weight: 750;
+    white-space: nowrap;
+}
+
+.compare-card-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px 12px;
+    margin-top: 12px;
+}
+
+.compare-card-item {
+    padding: 8px 10px;
+    border-radius: 10px;
+    background: rgba(120, 120, 120, 0.06);
+}
+
+.compare-card-label {
+    font-size: 0.74rem;
+    opacity: 0.64;
+}
+
+.compare-card-value {
+    font-size: 0.92rem;
+    font-weight: 650;
+    margin-top: 1px;
+}
+
+.compare-card-judge {
+    display: inline-block;
+    margin-top: 10px;
+    padding: 3px 8px;
+    border-radius: 999px;
+    border: 1px solid rgba(120, 120, 120, 0.25);
+    font-size: 0.8rem;
 }
 
 @media (max-width: 768px) {
@@ -150,8 +219,28 @@ PCではブロック全体を非表示にするため、50件分の空白が残�
         display: block;
     }
 
-    .st-key-world50_table {
+    .st-key-world50_table,
+    .st-key-compare_table {
         display: none;
+    }
+
+    .st-key-compare_mobile {
+        display: block;
+    }
+
+    div[data-testid="stTabs"] div[role="tablist"] {
+        overflow-x: auto;
+        flex-wrap: nowrap;
+        scrollbar-width: none;
+    }
+
+    div[data-testid="stTabs"] div[role="tablist"]::-webkit-scrollbar {
+        display: none;
+    }
+
+    div[data-testid="stTabs"] button[role="tab"] {
+        flex: 0 0 auto;
+        white-space: nowrap;
     }
 
     .mobile-list-title {
@@ -1165,7 +1254,9 @@ with tabs[3]:
         for col in ["1か月", "3か月", "6か月", "1年"]:
             compare_show[col] = (compare_show[col] * 100).round(2)
 
-        st.dataframe(
+        # PC: 情報量を落とさず表で比較。
+        compare_table = st.container(key="compare_table")
+        compare_table.dataframe(
             compare_show,
             use_container_width=True,
             hide_index=True,
@@ -1181,6 +1272,47 @@ with tabs[3]:
                     format="%.0f",
                 ),
             },
+        )
+
+        # スマホ: 横スクロール表ではなく、各社をカードにして主要情報を一画面で読む。
+        mobile_compare_cards = []
+        for _, compare_row in compare_df.iterrows():
+            company = html.escape(str(compare_row["会社名"]))
+            country = html.escape(str(compare_row["国"]))
+            sector = html.escape(str(compare_row["業種"]))
+            judge = html.escape(str(compare_row["判定"]))
+            price = compare_row["円換算価格"]
+            price_text = f"¥{price:,.0f}" if pd.notna(price) else "-"
+            score_text = f"{float(compare_row['Atlas Score']):.0f}"
+
+            period_values = {}
+            for period in ["1か月", "3か月", "6か月", "1年"]:
+                value = compare_row[period]
+                period_values[period] = _pct_text(value, decimals=1)
+
+            mobile_compare_cards.append(
+                '<div class="compare-card">'
+                '<div class="compare-card-head">'
+                '<div>'
+                f'<div class="compare-card-company">{company}</div>'
+                f'<div class="compare-card-meta">{country} ・ {sector} ｜ {price_text}</div>'
+                '</div>'
+                f'<div class="compare-card-score">Score {score_text}</div>'
+                '</div>'
+                '<div class="compare-card-grid">'
+                f'<div class="compare-card-item"><div class="compare-card-label">1か月</div><div class="compare-card-value">{period_values["1か月"]}</div></div>'
+                f'<div class="compare-card-item"><div class="compare-card-label">3か月</div><div class="compare-card-value">{period_values["3か月"]}</div></div>'
+                f'<div class="compare-card-item"><div class="compare-card-label">6か月</div><div class="compare-card-value">{period_values["6か月"]}</div></div>'
+                f'<div class="compare-card-item"><div class="compare-card-label">1年</div><div class="compare-card-value">{period_values["1年"]}</div></div>'
+                '</div>'
+                f'<div class="compare-card-judge">{judge}</div>'
+                '</div>'
+            )
+
+        compare_mobile = st.container(key="compare_mobile")
+        compare_mobile.markdown(
+            "".join(mobile_compare_cards),
+            unsafe_allow_html=True,
         )
 
         st.markdown("### 📈 1年の値動きを100基準で比較")
@@ -1201,8 +1333,11 @@ with tabs[3]:
             normalized_series.append(normalized)
 
         if normalized_series:
+            # 国ごとの休場日差で線が途切れないよう、既存の観測日に対して直前値を引き継ぐ。
             normalized_df = pd.concat(normalized_series, axis=1).sort_index()
-            st.line_chart(normalized_df)
+            normalized_df = normalized_df.ffill().dropna(how="any")
+            st.line_chart(normalized_df, height=360)
+            st.caption("※ 市場ごとの休場日は、比較表示上のみ直前の終値を引き継いでいます。")
         else:
             st.caption("比較チャートを作成できる価格データがありません。")
 
@@ -1210,14 +1345,44 @@ with tabs[3]:
         st.caption("総合Scoreだけでなく、どの項目で差が出ているかを確認できます。")
 
         parts_map = {}
+        part_order = []
         for _, compare_row in compare_df.iterrows():
             parts = compare_row["Score内訳"]
             if isinstance(parts, dict):
+                if not part_order:
+                    part_order = list(parts.keys())
                 parts_map[compare_row["会社名"]] = pd.Series(parts, dtype="float64")
 
         if parts_map:
             parts_compare = pd.DataFrame(parts_map).fillna(0)
-            st.bar_chart(parts_compare)
+            parts_long = (
+                parts_compare.rename_axis("項目")
+                .reset_index()
+                .melt(id_vars="項目", var_name="会社名", value_name="点数")
+            )
+
+            score_chart = (
+                alt.Chart(parts_long)
+                .mark_bar(cornerRadiusEnd=3)
+                .encode(
+                    y=alt.Y(
+                        "項目:N",
+                        sort=part_order,
+                        title=None,
+                        axis=alt.Axis(labelLimit=120),
+                    ),
+                    x=alt.X("点数:Q", title="点数", scale=alt.Scale(zero=True)),
+                    color=alt.Color("会社名:N", title=None),
+                    yOffset=alt.YOffset("会社名:N"),
+                    tooltip=[
+                        alt.Tooltip("会社名:N", title="会社"),
+                        alt.Tooltip("項目:N", title="項目"),
+                        alt.Tooltip("点数:Q", title="点数", format=".1f"),
+                    ],
+                )
+                .properties(height=max(300, len(part_order) * 48))
+            )
+            st.altair_chart(score_chart, use_container_width=True)
         else:
             st.caption("Score内訳を比較できませんでした。")
 
