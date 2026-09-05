@@ -1027,6 +1027,7 @@ if one_month is not None and abs(one_month) >= 15:
         reasons.append(
             "最近の関連ニュースも出ており、値動きと合わせて確認したい局面です"
         )
+
     if reasons:
         st.info(
             "### 📌 注目ポイント\n\n"
@@ -1039,7 +1040,10 @@ if one_month is not None and abs(one_month) >= 15:
         )
 
     st.markdown("## 📰 最新ニュース & AI解説")
-    st.caption("関連ニュースを最大3件表示し、初心者向けにAIが要点と影響を整理します。")
+    st.caption(
+        "関連ニュースを最大3件表示し、初心者向けにAIが要点と影響を整理します。"
+    )
+
     news = news_preview
 
     if news:
