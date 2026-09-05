@@ -369,7 +369,41 @@ with tabs[2]:
     c3.metric("円換算",f'¥{row["円換算価格"]:,.0f}' if pd.notna(row["円換算価格"]) else "-")
     c4.metric("1か月",f'{row["1か月"]*100:.2f}%')
     c5.metric("3か月",f'{row["3か月"]*100:.2f}%')
+    score = float(row["Atlas Score"])
+    one_month = float(row["1か月"]) * 100
+    three_month = float(row["3か月"]) * 100
 
+    st.markdown("### 🔰 30秒でわかる")
+
+    good_points = []
+    risk_points = []
+
+    if score >= 80:
+        good_points.append("Atlas Scoreが高く、現在の注目度は高めです")
+    elif score >= 65:
+        good_points.append("Atlas Scoreは中〜高水準です")
+
+    if one_month > 0:
+        good_points.append(f"直近1か月は +{one_month:.1f}%")
+    else:
+        risk_points.append(f"直近1か月は {one_month:.1f}%")
+
+    if three_month > 0:
+        good_points.append(f"直近3か月は +{three_month:.1f}%")
+    else:
+        risk_points.append(f"直近3か月は {three_month:.1f}%")
+
+    if abs(one_month) >= 15:
+        risk_points.append("1か月の値動きが大きく、価格変動には注意")
+
+    if not good_points:
+        good_points.append("現在は強いプラス材料が少なめです")
+
+    if not risk_points:
+        risk_points.append("値動きだけでは大きな警戒材料は確認されていません")
+
+    st.info("✅ 良い材料\n\n" + "\n\n".join(f"・{x}" for x in good_points))
+    st.warning("⚠️ 注意点\n\n" + "\n\n".join(f"・{x}" for x in risk_points))
     if st.button("⭐ お気に入りに追加/解除",key="fav_btn"):
         if t in st.session_state.favorites: st.session_state.favorites.remove(t)
         else: st.session_state.favorites.add(t)
