@@ -1081,7 +1081,7 @@ with tabs[3]:
     favdf = df[df["Ticker"].isin(st.session_state.favorites)].copy()
 
     if favdf.empty:
-    st.info("🔎 個別分析から気になる企業をお気に入りに追加すると、ここでまとめて比較できます。")
+        st.info("🔎 個別分析から気になる企業をお気に入りに追加すると、ここでまとめて比較できます。")
     else:
         favshow = favdf[
             [
