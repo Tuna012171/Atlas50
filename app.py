@@ -1,3 +1,4 @@
+import html
 import time
 import json
 
@@ -90,10 +91,13 @@ NEWS_ALIASES = {
 st.markdown(
     """
 <style>
-.block-container {padding-top: 1.3rem; padding-bottom: 3rem;}
+.block-container {
+    padding-top: 1.3rem;
+    padding-bottom: 3rem;
+}
 
 div[data-testid="stMetric"] {
-    border: 1px solid rgba(120,120,120,.20);
+    border: 1px solid rgba(120, 120, 120, 0.20);
     border-radius: 14px;
     padding: 12px 14px;
 }
@@ -124,16 +128,25 @@ div[data-testid="stMetric"] {
     margin-bottom: 26px;
     letter-spacing: 0.01em;
 }
-.badge {display:inline-block; padding:4px 9px; border-radius:999px; font-size:.85rem; border:1px solid rgba(120,120,120,.25);}
 
-.mobile-list-title,
-.mobile-stock-card {
+.badge {
+    display: inline-block;
+    padding: 4px 9px;
+    border-radius: 999px;
+    font-size: 0.85rem;
+    border: 1px solid rgba(120, 120, 120, 0.25);
+}
+
+/*
+スマホ用一覧は1つのHTMLブロックにまとめる。
+PCではブロック全体を非表示にするため、50件分の空白が残らない。
+*/
+.mobile-list-wrap {
     display: none;
 }
 
 @media (max-width: 768px) {
-    .mobile-list-title,
-    .mobile-stock-card {
+    .mobile-list-wrap {
         display: block;
     }
 
@@ -165,7 +178,7 @@ div[data-testid="stMetric"] {
     }
 
     div[data-testid="stMetric"] {
-        padding: 10px 10px;
+        padding: 10px;
         border-radius: 12px;
     }
 
@@ -190,7 +203,7 @@ div[data-testid="stMetric"] {
     }
 
     .mobile-stock-card {
-        border: 1px solid rgba(120,120,120,.20);
+        border: 1px solid rgba(120, 120, 120, 0.20);
         border-radius: 14px;
         padding: 14px;
         margin-bottom: 10px;
@@ -230,7 +243,7 @@ div[data-testid="stMetric"] {
         margin-top: 8px;
         padding: 3px 8px;
         border-radius: 999px;
-        border: 1px solid rgba(120,120,120,.25);
+        border: 1px solid rgba(120, 120, 120, 0.25);
         font-size: 0.8rem;
     }
 }
@@ -306,14 +319,78 @@ def _pct_text(value, decimals=2, show_plus=True):
     return f"{pct:.{decimals}f}%"
 
 
-def _safe_pct_number(value):
+def _pct_number_text(value, decimals=2):
+    """すでに%単位へ変換済みの数値を表示用文字列にする。"""
     if pd.isna(value):
-        return None
-    return round(float(value) * 100, 2)
+        return "-"
+    return f"{float(value):+.{decimals}f}%"
+
+
+def _build_attention_reasons(
+    score,
+    one_month,
+    three_month,
+    six_month,
+    one_year,
+    has_news=False,
+):
+    """「なぜ今注目？」用。数値の羅列ではなく、値動きの意味を短く整理する。"""
+    reasons = []
+
+    if score >= 80:
+        reasons.append("複数の指標が強く、Atlas Score上では現在かなり注目度が高い状態です")
+    elif score >= 65:
+        reasons.append("複数の指標が比較的良好で、Atlas Score上では注目度が高めです")
+
+    trend_values = [one_month, three_month, six_month, one_year]
+
+    if all(v is not None and v > 0 for v in trend_values):
+        reasons.append("短期から長期まで上昇基調がそろっており、幅広い期間で強さが見られます")
+    elif (
+        one_month is not None
+        and three_month is not None
+        and six_month is not None
+        and one_month > 0
+        and three_month > 0
+        and six_month > 0
+    ):
+        reasons.append("直近半年は上向きの流れが続いており、中期的な勢いが見られます")
+    elif (
+        one_month is not None
+        and three_month is not None
+        and one_month > 0
+        and three_month < 0
+    ):
+        reasons.append("足元では反発していますが、中期ではまだ回復途中の動きです")
+    elif (
+        one_month is not None
+        and six_month is not None
+        and one_year is not None
+        and one_month < 0
+        and six_month > 0
+        and one_year > 0
+    ):
+        reasons.append("中長期では上向きですが、直近は一時的な調整局面に入っています")
+    elif (
+        one_month is not None
+        and three_month is not None
+        and one_month < 0
+        and three_month < 0
+    ):
+        reasons.append("短期から中期では弱い動きが続いており、勢いの鈍化に注意が必要です")
+
+    if one_month is not None and abs(one_month) >= 15:
+        reasons.append("直近1か月の値動きが大きく、市場の注目が集まりやすい状態です")
+
+    if has_news:
+        reasons.append("最近の関連ニュースも出ており、値動きと合わせて確認したい局面です")
+
+    return reasons[:5]
+
 
 
 def score_parts(cur, r1w, r1m, r3m, sma5, sma20, sma60, rsi, vr, dist_high):
-    # V2.5では既存Scoreの比較可能性を保つため、Score式自体は変更しない。
+    # 過去バージョンとの比較可能性を保つため、Score式自体は変更しない。
     momentum_1w = max(0, min(12, 6 + r1w * 120))
     momentum_1m = max(0, min(15, 7 + r1m * 60))
     momentum_3m = max(0, min(15, 7 + r3m * 30))
@@ -470,7 +547,7 @@ def load_data():
                 high52 = float(close_52w.max()) if not close_52w.empty else float(close.max())
                 dh = cur / high52 - 1 if high52 else 0.0
 
-                # Score式は既存V2.4と同じ。
+                # Score式は過去バージョンとの互換性を維持。
                 score_r1w = 0.0 if pd.isna(r1w) else float(r1w)
                 score_r1m = 0.0 if pd.isna(r1m) else float(r1m)
                 score_r3m = 0.0 if pd.isna(r3m) else float(r3m)
@@ -741,8 +818,6 @@ if df.empty:
 
 df["FX→JPY"] = df["通貨"].map(fx)
 df["円換算価格"] = df["現在値"] * df["FX→JPY"]
-df["2万円で1株"] = df["円換算価格"].apply(lambda x: "○" if pd.notna(x) and x <= 20000 else "×")
-df["2万円で買える株数"] = df["円換算価格"].apply(lambda x: int(20000 // x) if pd.notna(x) and x > 0 else 0)
 
 
 tabs = st.tabs(["🏠 ホーム", "🌍 世界50", "🔎 個別分析", "⭐ お気に入り", "💼 保有株",  "💰 予算で探す"])
@@ -797,7 +872,7 @@ with tabs[0]:
 with tabs[1]:
     st.markdown("## 🌍 世界50")
     st.caption("国・地域・業種・Atlas Scoreで、世界の注目銘柄を絞り込めます。")
-    
+
     f1, f2, f3, f4 = st.columns(4)
     country = f1.selectbox("国", ["すべて"] + sorted(df["国"].unique().tolist()), key="country")
     region = f2.selectbox("地域", ["すべて"] + sorted(df["地域"].unique().tolist()), key="region")
@@ -814,20 +889,20 @@ with tabs[1]:
     view = view[view["Atlas Score"] >= minscore]
 
     show = view[
-    [
-        "順位",
-        "会社名",
-        "国",
-        "業種",
-        "円換算価格",
-        "1か月",
-        "3か月",
-        "6か月",
-        "1年",
-        "Atlas Score",
-        "判定",
-    ]
-].copy()
+        [
+            "順位",
+            "会社名",
+            "国",
+            "業種",
+            "円換算価格",
+            "1か月",
+            "3か月",
+            "6か月",
+            "1年",
+            "Atlas Score",
+            "判定",
+        ]
+    ].copy()
 
     for col in ["1か月", "3か月", "6か月", "1年"]:
         show[col] = (show[col] * 100).round(2)
@@ -843,40 +918,43 @@ with tabs[1]:
             "3か月": st.column_config.NumberColumn(format="%.2f%%"),
             "6か月": st.column_config.NumberColumn(format="%.2f%%"),
             "1年": st.column_config.NumberColumn(format="%.2f%%"),
-            "Atlas Score": st.column_config.ProgressColumn(min_value=0, max_value=100, format="%.0f"),
+            "Atlas Score": st.column_config.ProgressColumn(
+                min_value=0,
+                max_value=100,
+                format="%.0f",
+            ),
         },
     )
 
-    st.markdown('<div class="mobile-list-title">スマホ向け一覧</div>', unsafe_allow_html=True)
-
-    for _, row in show.iterrows():
-        score = int(row["Atlas Score"])
-        one_month = row["1か月"]
-        three_month = row["3か月"]
-        six_month = row["6か月"]
-        one_year = row["1年"]
-
-        one_month_text = "-" if pd.isna(one_month) else f"{one_month:.2f}%"
-        three_month_text = "-" if pd.isna(three_month) else f"{three_month:.2f}%"
-        six_month_text = "-" if pd.isna(six_month) else f"{six_month:.2f}%"
-        one_year_text = "-" if pd.isna(one_year) else f"{one_year:.2f}%"
-
-        st.markdown(
+    # スマホ用カードは1回のHTML描画にまとめる。
+    # PCで非表示にしてもStreamlit要素50個分の余白が残らない。
+    mobile_cards = []
+    for _, mobile_row in show.iterrows():
+        mobile_cards.append(
             f"""
             <div class="mobile-stock-card">
-                <div class="mobile-rank">#{int(row['順位'])}</div>
-                <div class="mobile-company">{row['会社名']}</div>
-                <div class="mobile-meta">{row['国']} ・ {row['業種']}</div>
-                <div class="mobile-score">Atlas Score {score}</div>
-                <div class="mobile-stats">
-                    1カ月 {one_month_text} ｜ 3カ月 {three_month_text}<br>
-                    6カ月 {six_month_text} ｜ 1年 {one_year_text}
+                <div class="mobile-rank">#{int(mobile_row['順位'])}</div>
+                <div class="mobile-company">{html.escape(str(mobile_row['会社名']))}</div>
+                <div class="mobile-meta">
+                    {html.escape(str(mobile_row['国']))} ・ {html.escape(str(mobile_row['業種']))}
                 </div>
-                <div class="mobile-judge">{row['判定']}</div>
+                <div class="mobile-score">Atlas Score {int(mobile_row['Atlas Score'])}</div>
+                <div class="mobile-stats">
+                    1か月 {_pct_number_text(mobile_row['1か月'])} ｜ 3か月 {_pct_number_text(mobile_row['3か月'])}<br>
+                    6か月 {_pct_number_text(mobile_row['6か月'])} ｜ 1年 {_pct_number_text(mobile_row['1年'])}
+                </div>
+                <div class="mobile-judge">{html.escape(str(mobile_row['判定']))}</div>
             </div>
-            """,
-            unsafe_allow_html=True,
+            """
         )
+
+    mobile_html = (
+        '<div class="mobile-list-wrap">'
+        '<div class="mobile-list-title">スマホ向け一覧</div>'
+        + "".join(mobile_cards)
+        + "</div>"
+    )
+    st.markdown(mobile_html, unsafe_allow_html=True)
 
 
 # ------------------------------
@@ -895,7 +973,7 @@ with tabs[2]:
     st.markdown(f"## {selected}")
     st.caption(f"{row['国']} ・ {row['業種']}　｜　Ticker: {t}　｜　円換算: {price_text}")
 
-    # 6個の重要指標を、スマホでも潰れにくい3列×2段で表示。
+    # 6個の重要指標を、スマホでも崩れにくい3列×2段で表示。
     c1, c2, c3 = st.columns(3)
     c1.metric("Atlas Score", f'{row["Atlas Score"]:.0f}')
     c2.metric("判定", row["判定"])
@@ -945,102 +1023,52 @@ with tabs[2]:
         risk_points.append("値動きだけでは大きな警戒材料は確認されていません")
 
     st.info(
-    "### ✅ プラス材料\n\n"
-    + "\n\n".join(f"・{x}" for x in good_points)
+        "### ✅ プラス材料\n\n"
+        + "\n\n".join(f"・{x}" for x in good_points)
     )
- 
+
     st.warning(
-    "### ⚠️ チェックポイント\n\n"
-    + "\n\n".join(f"・{x}" for x in risk_points)
+        "### ⚠️ チェックポイント\n\n"
+        + "\n\n".join(f"・{x}" for x in risk_points)
     )
-    if st.button("⭐ お気に入りに追加/解除", key="fav_btn"):
-        if t in st.session_state.favorites:
+
+    is_favorite = t in st.session_state.favorites
+    favorite_label = "⭐ お気に入りから解除" if is_favorite else "⭐ お気に入りに追加"
+    if st.button(favorite_label, key="fav_btn"):
+        if is_favorite:
             st.session_state.favorites.remove(t)
         else:
             st.session_state.favorites.add(t)
+        st.rerun()
 
-    st.subheader("🔥 なぜ今注目？")
+    st.markdown("## 🔥 なぜ今注目？")
 
     news_preview = load_news(t, selected)
-    reasons = []
-
-# Atlas Scoreから現在の注目度を説明
-if score >= 80:
-    reasons.append("複数の指標が強く、Atlas上では現在かなり注目度が高い状態です")
-elif score >= 65:
-    reasons.append("複数の指標が比較的良好で、Atlas上では注目度が高めです")
-
-# 短期〜長期の流れをまとめて説明
-trend_values = [one_month, three_month, six_month, one_year]
-
-if all(v is not None and v > 0 for v in trend_values):
-    reasons.append("短期から長期まで上昇基調がそろっており、幅広い期間で強さが見られます")
-
-elif (
-    one_month is not None
-    and three_month is not None
-    and six_month is not None
-    and one_month > 0
-    and three_month > 0
-    and six_month > 0
-):
-    reasons.append("直近半年は上向きの流れが続いており、中期的な勢いが見られます")
-
-elif (
-    one_month is not None
-    and three_month is not None
-    and one_month > 0
-    and three_month < 0
-):
-    reasons.append("足元では反発していますが、中期ではまだ回復途中の動きです")
-
-elif (
-    one_month is not None
-    and six_month is not None
-    and one_year is not None
-    and one_month < 0
-    and six_month > 0
-    and one_year > 0
-):
-    reasons.append("中長期では上向きですが、直近は一時的な調整局面に入っています")
-
-elif (
-    one_month is not None
-    and three_month is not None
-    and one_month < 0
-    and three_month < 0
-):
-    reasons.append("短期から中期では弱い動きが続いており、勢いの鈍化に注意が必要です")
-
-# 値動きが特に大きい場合
-if one_month is not None and abs(one_month) >= 15:
-    reasons.append("直近1か月の値動きが大きく、市場の注目が集まりやすい状態です")
-
-    if news_preview:
-        reasons.append(
-            "最近の関連ニュースも出ており、値動きと合わせて確認したい局面です"
-        )
+    reasons = _build_attention_reasons(
+        score=score,
+        one_month=one_month,
+        three_month=three_month,
+        six_month=six_month,
+        one_year=one_year,
+        has_news=bool(news_preview),
+    )
 
     if reasons:
         st.info(
             "### 📌 注目ポイント\n\n"
-            + "\n\n".join(f"・{reason}" for reason in reasons[:5])
+            + "\n\n".join(f"・{reason}" for reason in reasons)
         )
     else:
         st.info(
             "### 📌 注目ポイント\n\n"
-            "・現在は大きく目立つ材料が少ない状態です"
+            "・現在は大きく目立つトレンドが少ない状態です"
         )
 
     st.markdown("## 📰 最新ニュース & AI解説")
-    st.caption(
-        "関連ニュースを最大3件表示し、初心者向けにAIが要点と影響を整理します。"
-    )
+    st.caption("関連ニュースを最大3件表示し、初心者向けにAIが要点と影響を整理します。")
 
-    news = news_preview
-
-    if news:
-        for i, item in enumerate(news[:3], start=1):
+    if news_preview:
+        for i, item in enumerate(news_preview[:3], start=1):
             card = st.container(border=True)
             card.markdown(f"### 📰 注目ニュース {i}")
 
@@ -1095,6 +1123,7 @@ if one_month is not None and abs(one_month) >= 15:
     )
     st.bar_chart(parts_df.set_index("項目")["点数"])
 
+
 # ------------------------------
 # お気に入り
 # ------------------------------
@@ -1145,7 +1174,10 @@ with tabs[3]:
 # ------------------------------
 with tabs[4]:
     st.markdown("## 💼 保有株")
-    st.caption("保有銘柄・株数・平均取得単価を入力すると、現在の評価額と損益を自動計算します。CSVで保存・復元できます。")
+    st.caption(
+        "保有銘柄・株数・平均取得単価を入力すると、現在の評価額と損益を自動計算します。"
+        "外国株の平均取得単価は現地通貨で入力し、現在の為替で円換算する概算です。CSVで保存・復元できます。"
+    )
 
     edited = st.data_editor(
         st.session_state.portfolio,
@@ -1157,7 +1189,7 @@ with tabs[4]:
                 required=True,
             ),
             "株数": st.column_config.NumberColumn(min_value=0.0, step=0.01),
-            "平均取得単価": st.column_config.NumberColumn(min_value=0.0, step=0.01),
+            "平均取得単価": st.column_config.NumberColumn("平均取得単価（現地通貨）", min_value=0.0, step=0.01),
         },
         key="portfolio_editor",
     )
@@ -1165,6 +1197,8 @@ with tabs[4]:
     st.session_state.portfolio = edited
 
     calc = []
+    skipped_portfolio = []
+
     for _, p in edited.dropna(subset=["Ticker"]).iterrows():
         rr = df[df["Ticker"] == p["Ticker"]]
         if rr.empty:
@@ -1173,10 +1207,24 @@ with tabs[4]:
         rr = rr.iloc[0]
         qty = float(p.get("株数", 0) or 0)
         avg = float(p.get("平均取得単価", 0) or 0)
-        fxr = rr["FX→JPY"] if pd.notna(rr["FX→JPY"]) else 1
+
+        if qty <= 0:
+            continue
+
+        if pd.isna(rr["円換算価格"]):
+            skipped_portfolio.append(rr["会社名"])
+            continue
+
+        if rr["通貨"] == "JPY":
+            fxr = 1.0
+        elif pd.notna(rr["FX→JPY"]):
+            fxr = float(rr["FX→JPY"])
+        else:
+            skipped_portfolio.append(rr["会社名"])
+            continue
 
         invested = qty * avg * fxr
-        current = qty * rr["円換算価格"]
+        current = qty * float(rr["円換算価格"])
         pnl = current - invested
 
         calc.append(
@@ -1191,6 +1239,12 @@ with tabs[4]:
                 rr["Atlas Score"],
                 rr["判定"],
             ]
+        )
+
+    if skipped_portfolio:
+        st.warning(
+            "為替または円換算価格を取得できず、計算対象外になった銘柄があります："
+            + "、".join(dict.fromkeys(skipped_portfolio))
         )
 
     if calc:
@@ -1312,6 +1366,8 @@ with tabs[5]:
                 "Atlas Score": st.column_config.ProgressColumn(min_value=0, max_value=100, format="%.0f"),
             },
         )
+    else:
+        st.info("現在の予算内で1株買える企業はありません。")
 
 
 # ------------------------------
