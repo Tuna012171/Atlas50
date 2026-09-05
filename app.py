@@ -489,7 +489,7 @@ with tabs[2]:
         st.write("・現在は大きく目立つ材料が少ない状態です")
     st.subheader("最近のニュース")
     news = news_preview
-       if news:
+        if news:
         for i, item in enumerate(news[:3], start=1):
             st.markdown(f"### 📰 注目ニュース {i}")
 
