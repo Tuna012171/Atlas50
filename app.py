@@ -321,8 +321,8 @@ st.markdown("### スマホ向け一覧")
 
 for _, row in show.iterrows():
     score = int(row["Atlas Score"])
-    one_month = row["1カ月"] 
-    three_month = row["3カ月"] 
+    one_month = row["1か月"] 
+    three_month = row["3か月"] 
 
     st.markdown(
         f"""
