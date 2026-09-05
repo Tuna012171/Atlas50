@@ -465,6 +465,10 @@ with tabs[2]:
     selected = st.selectbox("会社を選ぶ",df["会社名"].tolist(),key="detail_company")
     row = df[df["会社名"]==selected].iloc[0]
     t = row["Ticker"]
+    
+    st.markdown(f"## {selected}")
+    st.caption(f"{row['国']} ・ {row['業種']}　｜　Ticker: {t}")
+    
     c1,c2,c3,c4,c5 = st.columns(5)
     c1.metric("Atlas Score",f'{row["Atlas Score"]:.0f}')
     c2.metric("判定",row["判定"])
@@ -589,6 +593,15 @@ with tabs[2]:
 
     else:
         st.caption("この会社に関連するニュースを取得できませんでした。")
+    st.subheader("1年チャート")
+    hist = histories.get(t)
+    if hist is not None and not hist.empty:
+        st.line_chart(hist[["Close","SMA20","SMA60"]])
+
+    st.subheader("Scoreの内訳")
+    parts = row["Score内訳"]
+    parts_df = pd.DataFrame({"項目":list(parts.keys()),"点数":list(parts.values())})
+    st.bar_chart(parts_df.set_index("項目")["点数"])
 with tabs[3]:
     favdf = df[df["Ticker"].isin(st.session_state.favorites)].copy()
     if favdf.empty:
