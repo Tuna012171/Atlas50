@@ -417,9 +417,36 @@ with tabs[2]:
     parts = row["Score内訳"]
     parts_df = pd.DataFrame({"項目":list(parts.keys()),"点数":list(parts.values())})
     st.bar_chart(parts_df.set_index("項目")["点数"])
+    st.subheader("🔥 なぜ今注目？")
 
+    news_preview = load_news(t)
+    reasons = []
+
+    if score >= 80:
+        reasons.append(f"Atlas Scoreが{score:.0f}と高く、現在の注目度はかなり高めです")
+    elif score >= 65:
+        reasons.append(f"Atlas Scoreが{score:.0f}で、中〜高水準の注目度です")
+
+    if one_month >= 5:
+        reasons.append(f"直近1か月で +{one_month:.1f}% 上昇しています")
+    elif one_month <= -5:
+        reasons.append(f"直近1か月で {one_month:.1f}% 下落しており、値動きには注意が必要です")
+
+    if three_month >= 10:
+        reasons.append(f"直近3か月では +{three_month:.1f}% と強い動きです")
+
+    if news_preview:
+        headline = news_preview[0].get("title")
+        if headline:
+            reasons.append(f"最近の注目ニュース：{headline}")
+
+    if reasons:
+        for reason in reasons[:4]:
+            st.write(f"・{reason}")
+    else:
+        st.write("・現在は大きく目立つ材料が少ない状態です")
     st.subheader("最近のニュース")
-    news = load_news(t)
+    news = news_preview
     if news:
         for item in news[:6]:
             if item["link"]:
