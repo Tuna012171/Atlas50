@@ -584,8 +584,8 @@ with tabs[2]:
 
             card.caption(f"英語原文：{item['title']}")
 
-if item["link"]:
-    card.markdown(f"[🔗 元の記事を見る]({item['link']})")
+            if item["link"]:
+                card.markdown(f"[🔗 元の記事を見る]({item['link']})")
 
     else:
         st.caption("この会社に関連するニュースを取得できませんでした。")
