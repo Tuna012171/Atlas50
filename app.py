@@ -489,15 +489,25 @@ with tabs[2]:
         st.write("・現在は大きく目立つ材料が少ない状態です")
     st.subheader("最近のニュース")
     news = news_preview
-    if news:
-        for item in news[:6]:
-            if item["link"]:
-                st.markdown(f'- [{item["title"]}]({item["link"]})  — {item["publisher"]}')
-            else:
-                st.write(f'• {item["title"]} — {item["publisher"]}')
-    else:
-        st.caption("ニュースを取得できませんでした。")
+       if news:
+        for i, item in enumerate(news[:3], start=1):
+            st.markdown(f"### 📰 注目ニュース {i}")
 
+            st.write(f"**{item['title']}**")
+            st.caption(f"情報元：{item['publisher']}")
+
+            st.info(
+                "💡 初心者向け解説\n\n"
+                "このニュースの日本語要約と、株価への影響を次の工程でAIが自動解説します。"
+            )
+
+            if item["link"]:
+                st.markdown(f"[🔗 元の記事を見る]({item['link']})")
+
+            st.divider()
+
+    else:
+        st.caption("この会社に関連するニュースを取得できませんでした。")
 with tabs[3]:
     favdf = df[df["Ticker"].isin(st.session_state.favorites)].copy()
     if favdf.empty:
