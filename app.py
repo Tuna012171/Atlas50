@@ -24,7 +24,21 @@ div[data-testid="stMetric"] {
 .atlas-title {font-size: 2.4rem; font-weight: 800; letter-spacing: -0.04em;}
 .atlas-sub {opacity:.68; margin-top:-8px; margin-bottom:18px;}
 .badge {display:inline-block; padding:4px 9px; border-radius:999px; font-size:.85rem; border:1px solid rgba(120,120,120,.25);}
+.mobile-list-title,
+.mobile-stock-card {
+    display: none;
+}
 @media (max-width: 768px) {
+.mobile-list-title,
+.mobile-stock-card {
+    display: block;
+}
+
+.mobile-list-title {
+    font-size: 1.8rem;
+    font-weight: 700;
+    margin: 18px 0 12px 0;
+}
     .block-container {
         padding-top: 0.8rem;
         padding-left: 0.8rem;
@@ -317,7 +331,10 @@ with tabs[1]:
         "1か月":st.column_config.NumberColumn(format="%.2f%%"),"3か月":st.column_config.NumberColumn(format="%.2f%%"),
         "Atlas Score":st.column_config.ProgressColumn(min_value=0,max_value=100,format="%.0f")
     })
-st.markdown("### スマホ向け一覧")
+st.markdown(
+    '<div class="mobile-list-title">スマホ向け一覧</div>',
+    unsafe_allow_html=True
+)
 
 for _, row in show.iterrows():
     score = int(row["Atlas Score"])
