@@ -98,8 +98,32 @@ div[data-testid="stMetric"] {
     padding: 12px 14px;
 }
 
-.atlas-title {font-size: 2.4rem; font-weight: 800; letter-spacing: -0.04em;}
-.atlas-sub {opacity:.68; margin-top:-8px; margin-bottom:18px;}
+.atlas-title {
+    font-size: 3rem;
+    font-weight: 900;
+    letter-spacing: -0.055em;
+    line-height: 1.05;
+    margin-bottom: 10px;
+}
+
+.atlas-title::after {
+    content: "";
+    display: block;
+    width: 58px;
+    height: 4px;
+    margin-top: 12px;
+    border-radius: 999px;
+    background: #ff4b4b;
+}
+
+.atlas-sub {
+    font-size: 1.02rem;
+    font-weight: 500;
+    opacity: 0.62;
+    margin-top: 0;
+    margin-bottom: 26px;
+    letter-spacing: 0.01em;
+}
 .badge {display:inline-block; padding:4px 9px; border-radius:999px; font-size:.85rem; border:1px solid rgba(120,120,120,.25);}
 
 .mobile-list-title,
@@ -729,20 +753,19 @@ tabs = st.tabs(["🏠 ホーム", "🌍 世界50", "🔎 個別分析", "⭐ お
 # ------------------------------
 with tabs[0]:
     a, b, c, d, e = st.columns(5)
-    a.metric("取得", f"{len(df)} / 50")
-    b.metric("強い＋", int((df["判定"] == "強い＋").sum()))
-    c.metric("＋", int((df["判定"] == "＋").sum()))
-    d.metric("2万円で1株買える", int((df["2万円で1株"] == "○").sum()))
-    e.metric("最終日", str(df["最終日"].max()))
 
-    st.subheader("今日の上位10")
+    a.metric("🌍 対象銘柄", f"{len(df)} / 50")
+    b.metric("🔥 強い＋", int((df["判定"] == "強い＋").sum()))
+    c.metric("📈 ＋", int((df["判定"] == "＋").sum()))
+    d.metric("🎯 平均Score", f'{df["Atlas Score"].mean():.0f}')
+    e.metric("🕒 最終更新", str(df["最終日"].max()))
+    st.markdown("## 🔥 今日の注目 TOP10")
+    st.caption("Atlas Scoreをもとに、現在の注目度が高い銘柄を表示しています。")
     top = df.head(10)[
         [
             "順位",
             "会社名",
             "国",
-            "業種",
-            "円換算価格",
             "1か月",
             "3か月",
             "6か月",
@@ -760,7 +783,6 @@ with tabs[0]:
         use_container_width=True,
         hide_index=True,
         column_config={
-            "円換算価格": st.column_config.NumberColumn(format="¥%.0f"),
             "1か月": st.column_config.NumberColumn(format="%.2f%%"),
             "3か月": st.column_config.NumberColumn(format="%.2f%%"),
             "6か月": st.column_config.NumberColumn(format="%.2f%%"),
@@ -768,14 +790,19 @@ with tabs[0]:
             "Atlas Score": st.column_config.ProgressColumn(min_value=0, max_value=100, format="%.0f"),
         },
     )
-
+    st.markdown("### 📊 TOP10のAtlas Score比較")
+    st.caption("上位10銘柄の注目度を、Scoreで比較できます。")
     st.bar_chart(df.head(10).set_index("会社名")["Atlas Score"])
+    
 
 
 # ------------------------------
 # 世界50
 # ------------------------------
 with tabs[1]:
+    st.markdown("## 🌍 世界50")
+    st.caption("国・地域・業種・Atlas Scoreで、世界の注目銘柄を絞り込めます。")
+    
     f1, f2, f3, f4 = st.columns(4)
     country = f1.selectbox("国", ["すべて"] + sorted(df["国"].unique().tolist()), key="country")
     region = f2.selectbox("地域", ["すべて"] + sorted(df["地域"].unique().tolist()), key="region")
@@ -791,33 +818,24 @@ with tabs[1]:
         view = view[view["業種"] == sector]
     view = view[view["Atlas Score"] >= minscore]
 
-    show = view[
-        [
-            "順位",
-            "会社名",
-            "国",
-            "地域",
-            "業種",
-            "通貨",
-            "現在値",
-            "円換算価格",
-            "2万円で1株",
-            "2万円で買える株数",
-            "1日",
-            "1週",
-            "1か月",
-            "3か月",
-            "6か月",
-            "1年",
-            "RSI",
-            "出来高倍率",
-            "Atlas Score",
-            "判定",
-        ]
-    ].copy()
+   show = view[
+    [
+        "順位",
+        "会社名",
+        "国",
+        "業種",
+        "円換算価格",
+        "1か月",
+        "3か月",
+        "6か月",
+        "1年",
+        "Atlas Score",
+        "判定",
+    ]
+].copy()
 
-    for col in ["1日", "1週", "1か月", "3か月", "6か月", "1年"]:
-        show[col] = (show[col] * 100).round(2)
+    for col in ["1か月", "3か月", "6か月", "1年"]:
+    show[col] = (show[col] * 100).round(2)
 
     world50_table = st.container(key="world50_table")
     world50_table.dataframe(
@@ -826,8 +844,6 @@ with tabs[1]:
         hide_index=True,
         column_config={
             "円換算価格": st.column_config.NumberColumn(format="¥%.0f"),
-            "1日": st.column_config.NumberColumn(format="%.2f%%"),
-            "1週": st.column_config.NumberColumn(format="%.2f%%"),
             "1か月": st.column_config.NumberColumn(format="%.2f%%"),
             "3か月": st.column_config.NumberColumn(format="%.2f%%"),
             "6か月": st.column_config.NumberColumn(format="%.2f%%"),
@@ -872,7 +888,10 @@ with tabs[1]:
 # 個別分析
 # ------------------------------
 with tabs[2]:
-    selected = st.selectbox("会社を選ぶ", df["会社名"].tolist(), key="detail_company")
+    st.markdown("## 🔎 個別分析")
+    st.caption("気になる企業を選ぶと、価格トレンド・AIニュース・Atlas Scoreをまとめて確認できます。")
+
+    selected = st.selectbox("分析する企業", df["会社名"].tolist(), key="detail_company")
     row = df[df["会社名"] == selected].iloc[0]
     t = row["Ticker"]
 
@@ -930,9 +949,15 @@ with tabs[2]:
     if not risk_points:
         risk_points.append("値動きだけでは大きな警戒材料は確認されていません")
 
-    st.info("✅ 良い材料\n\n" + "\n\n".join(f"・{x}" for x in good_points))
-    st.warning("⚠️ 注意点\n\n" + "\n\n".join(f"・{x}" for x in risk_points))
-
+    st.info(
+    "### ✅ プラス材料\n\n"
+    + "\n\n".join(f"・{x}" for x in good_points)
+    )
+ 
+    st.warning(
+    "### ⚠️ チェックポイント\n\n"
+    + "\n\n".join(f"・{x}" for x in risk_points)
+    )
     if st.button("⭐ お気に入りに追加/解除", key="fav_btn"):
         if t in st.session_state.favorites:
             st.session_state.favorites.remove(t)
@@ -976,12 +1001,18 @@ with tabs[2]:
             reasons.append(f"最近の注目ニュース：{headline}")
 
     if reasons:
-        for reason in reasons[:5]:
-            st.write(f"・{reason}")
+        st.info(
+            "### 📌 注目ポイント\n\n"
+            + "\n\n".join(f"・{reason}" for reason in reasons[:5])
+        )
     else:
-        st.write("・現在は大きく目立つ材料が少ない状態です")
+        st.info(
+            "### 📌 注目ポイント\n\n"
+            "・現在は大きく目立つ材料が少ない状態です"
+        )
 
-    st.subheader("最近のニュース")
+    st.markdown("## 📰 最新ニュース & AI解説")
+    st.caption("関連ニュースを最大3件表示し、初心者向けにAIが要点と影響を整理します。")
     news = news_preview
 
     if news:
@@ -1022,27 +1053,35 @@ with tabs[2]:
     else:
         st.caption("この会社に関連するニュースを取得できませんでした。")
 
-    st.subheader("1年チャート")
+    st.markdown("## 📈 1年チャート")
+    st.caption("株価と20日・60日移動平均線から、中長期の値動きを確認できます。")
+
     hist = histories.get(t)
     if hist is not None and not hist.empty:
         st.line_chart(hist[["Close", "SMA20", "SMA60"]])
     else:
         st.caption("チャートを取得できませんでした。")
 
-    st.subheader("Scoreの内訳")
-    parts = row["Score内訳"]
-    parts_df = pd.DataFrame({"項目": list(parts.keys()), "点数": list(parts.values())})
-    st.bar_chart(parts_df.set_index("項目")["点数"])
+    st.markdown("## 📊 Atlas Scoreの内訳")
+    st.caption("Atlas Scoreを構成している各指標の点数を確認できます。")
 
+    parts = row["Score内訳"]
+    parts_df = pd.DataFrame(
+        {"項目": list(parts.keys()), "点数": list(parts.values())}
+    )
+    st.bar_chart(parts_df.set_index("項目")["点数"])
 
 # ------------------------------
 # お気に入り
 # ------------------------------
 with tabs[3]:
+    st.markdown("## ⭐ お気に入り")
+    st.caption("気になる銘柄を保存して、値動きやAtlas Scoreをまとめて比較できます。")
+    
     favdf = df[df["Ticker"].isin(st.session_state.favorites)].copy()
 
     if favdf.empty:
-        st.info("個別分析で「お気に入りに追加/解除」を押すとここに表示されます。")
+    st.info("🔎 個別分析から気になる企業をお気に入りに追加すると、ここでまとめて比較できます。")
     else:
         favshow = favdf[
             [
@@ -1081,7 +1120,8 @@ with tabs[3]:
 # 保有株
 # ------------------------------
 with tabs[4]:
-    st.caption("保有情報はこのブラウザセッション内で管理します。下のCSV保存/読込でバックアップできます。")
+    st.markdown("## 💼 保有株")
+    st.caption("保有銘柄・株数・平均取得単価を入力すると、現在の評価額と損益を自動計算します。CSVで保存・復元できます。")
 
     edited = st.data_editor(
         st.session_state.portfolio,
@@ -1135,11 +1175,30 @@ with tabs[4]:
             columns=["Ticker", "会社名", "株数", "投資額(円)", "評価額(円)", "損益(円)", "損益率", "Score", "判定"],
         )
 
-        p1, p2, p3 = st.columns(3)
-        p1.metric("投資額", f'¥{pf["投資額(円)"].sum():,.0f}')
-        p2.metric("評価額", f'¥{pf["評価額(円)"].sum():,.0f}')
-        p3.metric("損益", f'¥{pf["損益(円)"].sum():,.0f}')
+st.markdown("### 📌 保有状況サマリー")
 
+total_invested = pf["投資額(円)"].sum()
+total_current = pf["評価額(円)"].sum()
+total_pnl = pf["損益(円)"].sum()
+total_pnl_rate = (total_pnl / total_invested * 100) if total_invested else 0
+
+p1, p2, p3 = st.columns(3)
+
+p1.metric(
+    "💴 投資額",
+    f"¥{total_invested:,.0f}"
+)
+
+p2.metric(
+    "📊 評価額",
+    f"¥{total_current:,.0f}"
+)
+
+p3.metric(
+    "📈 損益",
+    f"¥{total_pnl:,.0f}",
+    delta=f"{total_pnl_rate:+.2f}%"
+)
         pf_display = pf.copy()
         pf_display["損益率"] = (pf_display["損益率"] * 100).round(2)
 
@@ -1175,15 +1234,17 @@ with tabs[4]:
 # 月予算
 # ------------------------------
 with tabs[5]:
+    st.markdown("## 💰 予算で探す")
+    st.caption("投資予算を入力すると、その金額で1株以上買える企業を一覧で確認できます。")
     budget = st.number_input(
-        "投資予算",
+        "投資予算（円）",
         min_value=0,
         value=MONTHLY_BUDGET_DEFAULT,
         step=1000,
     )
 
     buyable = df[(df["円換算価格"].notna()) & (df["円換算価格"] <= budget)].copy()
-    st.metric("予算内で1株買える企業", len(buyable))
+    st.metric("🎯 予算内で1株買える企業", f"{len(buyable)}社")
     st.caption("これは『予算内で1株買えるか』の表示で、買い推奨ではありません。")
 
     if not buyable.empty:
