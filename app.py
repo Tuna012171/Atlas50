@@ -319,10 +319,10 @@ with tabs[1]:
     })
 st.markdown("### スマホ向け一覧")
 
-for _, row in view.iterrows():
+for _, row in show.iterrows():
     score = int(row["Atlas Score"])
-    one_month = row["1カ月"] * 100
-    three_month = row["3カ月"] * 100
+    one_month = row["1カ月"] 
+    three_month = row["3カ月"] 
 
     st.markdown(
         f"""
