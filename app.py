@@ -1172,33 +1172,48 @@ with tabs[4]:
     if calc:
         pf = pd.DataFrame(
             calc,
-            columns=["Ticker", "会社名", "株数", "投資額(円)", "評価額(円)", "損益(円)", "損益率", "Score", "判定"],
+            columns=[
+                "Ticker",
+                "会社名",
+                "株数",
+                "投資額(円)",
+                "評価額(円)",
+                "損益(円)",
+                "損益率",
+                "Score",
+                "判定",
+            ],
         )
 
-st.markdown("### 📌 保有状況サマリー")
+        st.markdown("### 📌 保有状況サマリー")
 
-total_invested = pf["投資額(円)"].sum()
-total_current = pf["評価額(円)"].sum()
-total_pnl = pf["損益(円)"].sum()
-total_pnl_rate = (total_pnl / total_invested * 100) if total_invested else 0
+        total_invested = pf["投資額(円)"].sum()
+        total_current = pf["評価額(円)"].sum()
+        total_pnl = pf["損益(円)"].sum()
+        total_pnl_rate = (
+            total_pnl / total_invested * 100
+            if total_invested
+            else 0
+        )
 
-p1, p2, p3 = st.columns(3)
+        p1, p2, p3 = st.columns(3)
 
-p1.metric(
-    "💴 投資額",
-    f"¥{total_invested:,.0f}"
-)
+        p1.metric(
+            "💴 投資額",
+            f"¥{total_invested:,.0f}"
+        )
 
-p2.metric(
-    "📊 評価額",
-    f"¥{total_current:,.0f}"
-)
+        p2.metric(
+            "📊 評価額",
+            f"¥{total_current:,.0f}"
+        )
 
-p3.metric(
-    "📈 損益",
-    f"¥{total_pnl:,.0f}",
-    delta=f"{total_pnl_rate:+.2f}%"
-)
+        p3.metric(
+            "📈 損益",
+            f"¥{total_pnl:,.0f}",
+            delta=f"{total_pnl_rate:+.2f}%"
+        )
+
         pf_display = pf.copy()
         pf_display["損益率"] = (pf_display["損益率"] * 100).round(2)
 
