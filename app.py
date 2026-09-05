@@ -33,7 +33,9 @@ div[data-testid="stMetric"] {
 .mobile-stock-card {
     display: block;
 }
-
+.st-key-world50_table {
+    display: none;
+}
 .mobile-list-title {
     font-size: 1.8rem;
     font-weight: 700;
@@ -302,7 +304,7 @@ with tabs[0]:
     top = df.head(10)[["順位","会社名","国","業種","円換算価格","1か月","3か月","Atlas Score","判定"]].copy()
     top["1か月"] = (top["1か月"]*100).round(2)
     top["3か月"] = (top["3か月"]*100).round(2)
-    st.dataframe(top,use_container_width=True,hide_index=True,column_config={
+   st.dataframe(top,use_container_width=True,hide_index=True,column_config={
         "円換算価格":st.column_config.NumberColumn(format="¥%.0f"),
         "1か月":st.column_config.NumberColumn(format="%.2f%%"),
         "3か月":st.column_config.NumberColumn(format="%.2f%%"),
@@ -325,7 +327,8 @@ with tabs[1]:
 
     show=view[["順位","会社名","国","地域","業種","通貨","現在値","円換算価格","2万円で1株","2万円で買える株数","1日","1週","1か月","3か月","RSI","出来高倍率","Atlas Score","判定"]].copy()
     for col in ["1日","1週","1か月","3か月"]: show[col]=(show[col]*100).round(2)
-    st.dataframe(show,use_container_width=True,hide_index=True,column_config={
+        world50_table = st.container(key="world50_table")
+    world50_table.dataframe(show,use_container_width=True,hide_index=True,column_config={
         "円換算価格":st.column_config.NumberColumn(format="¥%.0f"),
         "1日":st.column_config.NumberColumn(format="%.2f%%"),"1週":st.column_config.NumberColumn(format="%.2f%%"),
         "1か月":st.column_config.NumberColumn(format="%.2f%%"),"3か月":st.column_config.NumberColumn(format="%.2f%%"),
