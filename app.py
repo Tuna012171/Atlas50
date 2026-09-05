@@ -820,7 +820,7 @@ df["FX→JPY"] = df["通貨"].map(fx)
 df["円換算価格"] = df["現在値"] * df["FX→JPY"]
 
 
-tabs = st.tabs(["🏠 ホーム", "🌍 世界50", "🔎 個別分析", "⭐ お気に入り", "💼 保有株",  "💰 予算で探す"])
+tabs = st.tabs(["🏠 ホーム", "🌍 世界50", "🔎 個別分析", "⚖️ 比較", "⭐ お気に入り", "💼 保有株", "💰 予算で探す"])
 
 
 # ------------------------------
@@ -1123,9 +1123,115 @@ with tabs[2]:
 
 
 # ------------------------------
-# お気に入り
+# 銘柄比較
 # ------------------------------
 with tabs[3]:
+    st.markdown("## ⚖️ 銘柄比較")
+    st.caption("2〜4社を同じ基準で並べ、値動きとAtlas Scoreの違いを確認できます。")
+
+    default_compare = df.head(2)["会社名"].tolist()
+    compare_names = st.multiselect(
+        "比較する企業（2〜4社）",
+        options=df["会社名"].tolist(),
+        default=default_compare,
+        max_selections=4,
+        key="compare_companies",
+    )
+
+    if len(compare_names) < 2:
+        st.info("比較する企業を2社以上選んでください。")
+    else:
+        compare_df = df[df["会社名"].isin(compare_names)].copy()
+        compare_order = {name: i for i, name in enumerate(compare_names)}
+        compare_df["_order"] = compare_df["会社名"].map(compare_order)
+        compare_df = compare_df.sort_values("_order")
+
+        st.markdown("### 📋 基本比較")
+        compare_show = compare_df[
+            [
+                "会社名",
+                "国",
+                "業種",
+                "円換算価格",
+                "1か月",
+                "3か月",
+                "6か月",
+                "1年",
+                "Atlas Score",
+                "判定",
+            ]
+        ].copy()
+
+        for col in ["1か月", "3か月", "6か月", "1年"]:
+            compare_show[col] = (compare_show[col] * 100).round(2)
+
+        st.dataframe(
+            compare_show,
+            use_container_width=True,
+            hide_index=True,
+            column_config={
+                "円換算価格": st.column_config.NumberColumn(format="¥%.0f"),
+                "1か月": st.column_config.NumberColumn(format="%.2f%%"),
+                "3か月": st.column_config.NumberColumn(format="%.2f%%"),
+                "6か月": st.column_config.NumberColumn(format="%.2f%%"),
+                "1年": st.column_config.NumberColumn(format="%.2f%%"),
+                "Atlas Score": st.column_config.ProgressColumn(
+                    min_value=0,
+                    max_value=100,
+                    format="%.0f",
+                ),
+            },
+        )
+
+        st.markdown("### 📈 1年の値動きを100基準で比較")
+        st.caption("各社の開始時点を100として、価格水準ではなく値動きの差を比較します。")
+
+        normalized_series = []
+        for _, compare_row in compare_df.iterrows():
+            compare_hist = histories.get(compare_row["Ticker"])
+            if compare_hist is None or compare_hist.empty or "Close" not in compare_hist.columns:
+                continue
+
+            close = pd.to_numeric(compare_hist["Close"], errors="coerce").dropna()
+            if close.empty or float(close.iloc[0]) == 0:
+                continue
+
+            normalized = close / float(close.iloc[0]) * 100
+            normalized.name = compare_row["会社名"]
+            normalized_series.append(normalized)
+
+        if normalized_series:
+            normalized_df = pd.concat(normalized_series, axis=1).sort_index()
+            st.line_chart(normalized_df)
+        else:
+            st.caption("比較チャートを作成できる価格データがありません。")
+
+        st.markdown("### 📊 Atlas Scoreの内訳比較")
+        st.caption("総合Scoreだけでなく、どの項目で差が出ているかを確認できます。")
+
+        parts_map = {}
+        for _, compare_row in compare_df.iterrows():
+            parts = compare_row["Score内訳"]
+            if isinstance(parts, dict):
+                parts_map[compare_row["会社名"]] = pd.Series(parts, dtype="float64")
+
+        if parts_map:
+            parts_compare = pd.DataFrame(parts_map).fillna(0)
+            st.bar_chart(parts_compare)
+        else:
+            st.caption("Score内訳を比較できませんでした。")
+
+        st.info(
+            "### 🔰 比較の見方\n\n"
+            "・短期の上昇率だけで判断せず、1か月〜1年の流れを合わせて確認します。\n\n"
+            "・Atlas Scoreは現在の価格トレンドを整理する学習・監視指標で、企業価値や将来の利益を保証するものではありません。"
+        )
+
+
+# ------------------------------
+# お気に入り
+# ------------------------------
+with tabs[4]:
     st.markdown("## ⭐ お気に入り")
     st.caption("気になる銘柄を保存して、値動きやAtlas Scoreをまとめて比較できます。")
     
@@ -1170,7 +1276,7 @@ with tabs[3]:
 # ------------------------------
 # 保有株
 # ------------------------------
-with tabs[4]:
+with tabs[5]:
     st.markdown("## 💼 保有株")
     st.caption(
         "保有銘柄・株数・平均取得単価を入力すると、現在の評価額と損益を自動計算します。"
@@ -1324,7 +1430,7 @@ with tabs[4]:
 # ------------------------------
 # 月予算
 # ------------------------------
-with tabs[5]:
+with tabs[6]:
     st.markdown("## 💰 予算で探す")
     st.caption("投資予算を入力すると、その金額で1株以上買える企業を一覧で確認できます。")
     budget = st.number_input(
