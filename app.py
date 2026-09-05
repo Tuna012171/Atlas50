@@ -340,25 +340,25 @@ with tabs[1]:
     )
 
     for _, row in show.iterrows():
-    score = int(row["Atlas Score"])
-    one_month = row["1か月"] 
-    three_month = row["3か月"] 
+        score = int(row["Atlas Score"])
+        one_month = row["1か月"] 
+        three_month = row["3か月"] 
 
-    st.markdown(
-        f"""
-        <div class="mobile-stock-card">
-            <div class="mobile-rank">#{int(row['順位'])}</div>
-            <div class="mobile-company">{row['会社名']}</div>
-            <div class="mobile-meta">{row['国']} ・ {row['業種']}</div>
-            <div class="mobile-score">Atlas Score {score}</div>
-            <div class="mobile-stats">
-                1カ月 {one_month:.2f}% ｜ 3カ月 {three_month:.2f}%
+        st.markdown(
+            f"""
+            <div class="mobile-stock-card">
+                <div class="mobile-rank">#{int(row['順位'])}</div>
+                <div class="mobile-company">{row['会社名']}</div>
+                <div class="mobile-meta">{row['国']} ・ {row['業種']}</div>
+                <div class="mobile-score">Atlas Score {score}</div>
+                <div class="mobile-stats">
+                    1カ月 {one_month:.2f}% ｜ 3カ月 {three_month:.2f}%
+                </div>
+                <div class="mobile-judge">{row['判定']}</div>
             </div>
-            <div class="mobile-judge">{row['判定']}</div>
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
+            """,
+            unsafe_allow_html=True
+        )
 with tabs[2]:
     selected = st.selectbox("会社を選ぶ",df["会社名"].tolist(),key="detail_company")
     row = df[df["会社名"]==selected].iloc[0]
