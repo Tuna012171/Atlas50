@@ -1024,10 +1024,9 @@ if one_month is not None and abs(one_month) >= 15:
     reasons.append("直近1か月の値動きが大きく、市場の注目が集まりやすい状態です")
 
     if news_preview:
-    　　reasons.append(
-        "最近の関連ニュースも出ており、値動きと合わせて確認したい局面です"
-    )
-
+        reasons.append(
+            "最近の関連ニュースも出ており、値動きと合わせて確認したい局面です"
+        )
     if reasons:
         st.info(
             "### 📌 注目ポイント\n\n"
