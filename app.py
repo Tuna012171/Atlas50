@@ -551,7 +551,8 @@ with tabs[2]:
     news = news_preview
     if news:
         for i, item in enumerate(news[:3], start=1):
-            st.markdown(f"### 📰 注目ニュース {i}")
+            card = st.container(border=True)
+            card.markdown(f"### 📰 注目ニュース {i}")
 
             ai_news = analyze_news_with_ai(selected, item["title"])
 
@@ -569,25 +570,22 @@ with tabs[2]:
             else:
                 impact_icon = "🟡"
 
-            st.write(f"**🇯🇵 {title_ja}**")
-            st.caption(f"情報元：{item['publisher']}")
+            card.write(f"**🇯🇵 {title_ja}**")
+            card.caption(f"情報元：{item['publisher']}")
 
-            st.info(
+            card.info(
                 f"💡 初心者向け解説\n\n"
                 f"{summary_ja}"
             )
 
-            st.write(
+            card.write(
                 f"📊 **ニュースの影響：{impact_icon} {impact}**"
             )
 
-            with st.expander("英語の元タイトルを見る"):
-                st.write(item["title"])
+            card.caption(f"英語原文：{item['title']}")
 
-            if item["link"]:
-                st.markdown(f"[🔗 元の記事を見る]({item['link']})")
-
-            st.divider()
+if item["link"]:
+    card.markdown(f"[🔗 元の記事を見る]({item['link']})")
 
     else:
         st.caption("この会社に関連するニュースを取得できませんでした。")
