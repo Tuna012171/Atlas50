@@ -2,11 +2,13 @@
 import io
 import math
 import time
+import json
 from datetime import datetime
 
 import pandas as pd
 import streamlit as st
 import yfinance as yf
+from openai import OpenAI
 
 st.set_page_config(page_title="Atlas 50", page_icon="🌍", layout="wide")
 
@@ -318,6 +320,56 @@ def load_news(ticker, company_name=""):
         pass
 
     return items
+    
+@st.cache_data(ttl=86400, show_spinner=False)
+def analyze_news_with_ai(company_name, title):
+    try:
+        client = OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
+
+        prompt = f"""
+あなたはAtlas50の初心者向け株式ニュース解説AIです。
+
+会社名:
+{company_name}
+
+ニュース見出し:
+{title}
+
+次のJSONだけを返してください。
+
+{{
+  "title_ja": "初心者にも分かる短い日本語タイトル",
+  "summary": "専門用語をできるだけ使わず2文以内で説明",
+  "impact": "追い風候補・中立・リスク候補 のどれか"
+}}
+
+ルール:
+- 買う・売るなどの投資推奨はしない
+- 見出しから分からない事実を作らない
+- 判断できない場合は中立
+- 日本語で書く
+"""
+
+        response = client.responses.create(
+            model="gpt-5.6-luna",
+            input=prompt
+        )
+
+        text = response.output_text.strip()
+
+        if text.startswith("```"):
+            text = text.replace("```json", "").replace("```", "").strip()
+
+        return json.loads(text)
+
+    except Exception:
+        return {
+            "title_ja": title,
+            "summary": "AI解説を取得できませんでした。",
+            "impact": "中立"
+        }
+
+
 if "favorites" not in st.session_state:
     st.session_state.favorites = set()
 if "portfolio" not in st.session_state:
@@ -501,13 +553,36 @@ with tabs[2]:
         for i, item in enumerate(news[:3], start=1):
             st.markdown(f"### 📰 注目ニュース {i}")
 
-            st.write(f"**{item['title']}**")
+            ai_news = analyze_news_with_ai(selected, item["title"])
+
+            title_ja = ai_news.get("title_ja", item["title"])
+            summary_ja = ai_news.get(
+                "summary",
+                "ニュースの解説を取得できませんでした。"
+            )
+            impact = ai_news.get("impact", "中立")
+
+            if impact == "追い風候補":
+                impact_icon = "🟢"
+            elif impact == "リスク候補":
+                impact_icon = "🔴"
+            else:
+                impact_icon = "🟡"
+
+            st.write(f"**🇯🇵 {title_ja}**")
             st.caption(f"情報元：{item['publisher']}")
 
             st.info(
-                "💡 初心者向け解説\n\n"
-                "このニュースの日本語要約と、株価への影響を次の工程でAIが自動解説します。"
+                f"💡 初心者向け解説\n\n"
+                f"{summary_ja}"
             )
+
+            st.write(
+                f"📊 **ニュースの影響：{impact_icon} {impact}**"
+            )
+
+            with st.expander("英語の元タイトルを見る"):
+                st.write(item["title"])
 
             if item["link"]:
                 st.markdown(f"[🔗 元の記事を見る]({item['link']})")
