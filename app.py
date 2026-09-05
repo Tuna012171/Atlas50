@@ -835,7 +835,7 @@ with tabs[1]:
 ].copy()
 
     for col in ["1か月", "3か月", "6か月", "1年"]:
-    show[col] = (show[col] * 100).round(2)
+        show[col] = (show[col] * 100).round(2)
 
     world50_table = st.container(key="world50_table")
     world50_table.dataframe(
