@@ -614,6 +614,70 @@ def _build_ranking_explanation(row, full_df):
     }
 
 
+def _build_atlas_pulse(full_df):
+    """Atlas50全体の値動きの広がりを、予測ではなく現在のスナップショットとして整理する。"""
+    data = full_df.copy()
+    total = len(data)
+
+    def _positive_count(col):
+        values = pd.to_numeric(data[col], errors="coerce")
+        return int((values > 0).sum())
+
+    one_month_positive = _positive_count("1か月")
+    three_month_positive = _positive_count("3か月")
+    above_sma20 = int((pd.to_numeric(data["20日線比"], errors="coerce") > 0).sum())
+
+    one_month_series = pd.to_numeric(data["1か月"], errors="coerce")
+    three_month_series = pd.to_numeric(data["3か月"], errors="coerce")
+    avg_one_month = float(one_month_series.mean() * 100) if one_month_series.notna().any() else 0.0
+    avg_three_month = float(three_month_series.mean() * 100) if three_month_series.notna().any() else 0.0
+
+    breadth_1m = one_month_positive / total if total else 0
+    breadth_sma20 = above_sma20 / total if total else 0
+    breadth = (breadth_1m + breadth_sma20) / 2
+
+    if breadth >= 0.65 and avg_one_month > 0:
+        label = "広く上向き"
+        icon = "🟢"
+        summary = "複数の銘柄で1か月のプラスと20日線上回りが見られ、強さが一部の銘柄だけに偏っていない状態です。"
+    elif breadth <= 0.35 and avg_one_month < 0:
+        label = "全体に弱め"
+        icon = "🔴"
+        summary = "1か月のプラス銘柄と20日線を上回る銘柄が少なく、Atlas50全体では弱い値動きが目立つ状態です。"
+    else:
+        label = "強弱が混在"
+        icon = "🟡"
+        summary = "上向きの銘柄と弱い銘柄が混在しており、Atlas50全体では方向感がそろっていない状態です。"
+
+    region = (
+        data.groupby("地域", dropna=False)
+        .agg(
+            銘柄数=("Ticker", "count"),
+            平均Score=("Atlas Score", "mean"),
+            一か月平均=("1か月", "mean"),
+            三か月平均=("3か月", "mean"),
+        )
+        .reset_index()
+    )
+    region["平均Score"] = region["平均Score"].round(1)
+    region["1か月平均"] = (region.pop("一か月平均") * 100).round(2)
+    region["3か月平均"] = (region.pop("三か月平均") * 100).round(2)
+    region = region.sort_values(["平均Score", "銘柄数"], ascending=[False, False]).reset_index(drop=True)
+
+    return {
+        "total": total,
+        "one_month_positive": one_month_positive,
+        "three_month_positive": three_month_positive,
+        "above_sma20": above_sma20,
+        "avg_one_month": avg_one_month,
+        "avg_three_month": avg_three_month,
+        "label": label,
+        "icon": icon,
+        "summary": summary,
+        "region": region,
+    }
+
+
 def score_parts(cur, r1w, r1m, r3m, sma5, sma20, sma60, rsi, vr, dist_high):
     # 過去バージョンとの比較可能性を保つため、Score式自体は変更しない。
     momentum_1w = max(0, min(12, 6 + r1w * 120))
@@ -1176,6 +1240,38 @@ with tabs[0]:
     c.metric("📈 ＋", int((df["判定"] == "＋").sum()))
     d.metric("🎯 平均Score", f'{df["Atlas Score"].mean():.1f}')
     e.metric("🕒 最終更新", str(df["最終日"].max()))
+
+    pulse = _build_atlas_pulse(df)
+    st.markdown("### 📡 Atlas Pulse")
+    st.caption("50社全体を見て、値動きの広がりと現在の状態を確認します。将来予測ではなく、現在データのスナップショットです。")
+
+    pulse_box = st.container(border=True)
+    p1, p2, p3, p4 = pulse_box.columns(4)
+    p1.metric("📈 1か月プラス", f"{pulse['one_month_positive']} / {pulse['total']}")
+    p2.metric("🗓️ 3か月プラス", f"{pulse['three_month_positive']} / {pulse['total']}")
+    p3.metric("〽️ 20日線より上", f"{pulse['above_sma20']} / {pulse['total']}")
+    p4.metric("📊 平均1か月", f"{pulse['avg_one_month']:+.2f}%")
+    pulse_box.info(
+        f"**{pulse['icon']} 全体像：{pulse['label']}**\n\n"
+        f"{pulse['summary']}"
+    )
+
+    with st.expander("🌍 地域別の状態を見る"):
+        region_show = pulse["region"].copy()
+        st.dataframe(
+            region_show,
+            use_container_width=True,
+            hide_index=True,
+            column_config={
+                "平均Score": st.column_config.ProgressColumn(
+                    min_value=0, max_value=100, format="%.1f"
+                ),
+                "1か月平均": st.column_config.NumberColumn(format="%.2f%%"),
+                "3か月平均": st.column_config.NumberColumn(format="%.2f%%"),
+            },
+        )
+        st.caption("※ 地域別の平均はAtlas50に含まれる銘柄だけを集計しています。市場全体の指数ではありません。")
+
     st.markdown("## 🔥 今日の注目 TOP10")
     st.caption("Atlas Scoreをもとに、現在の注目度が高い銘柄を表示しています。")
     top = df.head(10)[
@@ -1207,7 +1303,7 @@ with tabs[0]:
             "Atlas Score": st.column_config.ProgressColumn(min_value=0, max_value=100, format="%.1f"),
         },
     )
-
+    st.caption("※ 同じScore表示でも、順位は内部のより細かい値によって決まる場合があります。")
 
     st.markdown("### 🧭 なぜこの順位？")
     st.caption("TOP10から1社を選ぶと、Atlas Scoreの内訳と値動きから現在の順位の背景を整理します。")
