@@ -880,17 +880,28 @@ def analyze_news_with_ai(company_name, title, source_summary=""):
 
 @st.cache_data(ttl=86400, show_spinner=False)
 def analyze_comparison_with_ai(compare_payload_json):
-    """選択銘柄の価格トレンドとAtlas Scoreだけを、初心者向けに比較整理する。"""
+    """選択銘柄の価格トレンドとAtlas Scoreだけを、初心者向けに比較整理する。
+
+    外部AIが長時間応答しない場合でも画面を止めないよう、
+    20秒でタイムアウトし、自動でエラー表示へ戻す。
+    """
     try:
         compare_payload = json.loads(compare_payload_json)
-        client = OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
+
+        # API待ちでStreamlitが長時間止まらないようにする。
+        # max_retries=0 にして、タイムアウト後の自動再試行も抑える。
+        client = OpenAI(
+            api_key=st.secrets["OPENAI_API_KEY"],
+            timeout=20.0,
+            max_retries=0,
+        )
 
         prompt = f"""
 あなたはAtlas50の初心者向け「銘柄比較」解説AIです。
 以下の比較データだけを使って、違いを分かりやすく整理してください。
 
 比較データ:
-{json.dumps(compare_payload, ensure_ascii=False, indent=2)}
+{json.dumps(compare_payload, ensure_ascii=False, separators=(",", ":"))}
 
 次のJSONだけを返してください。
 
@@ -923,6 +934,7 @@ def analyze_comparison_with_ai(compare_payload_json):
         response = client.responses.create(
             model="gpt-5.6-luna",
             input=prompt,
+            max_output_tokens=900,
         )
 
         raw_text = response.output_text.strip()
@@ -959,18 +971,21 @@ def analyze_comparison_with_ai(compare_payload_json):
                 cleaned_notes.append({"company": company, "note": note})
 
         return {
+            "ok": True,
             "overview": overview or "選択した銘柄の価格トレンドとAtlas Scoreを比較しました。",
             "company_notes": cleaned_notes,
             "key_differences": [str(x).strip() for x in key_differences[:3] if str(x).strip()],
             "watch_points": [str(x).strip() for x in watch_points[:3] if str(x).strip()],
         }
 
-    except Exception:
+    except Exception as e:
         return {
+            "ok": False,
             "overview": "AI比較解説を取得できませんでした。基本比較表とグラフはそのまま確認できます。",
             "company_notes": [],
             "key_differences": [],
-            "watch_points": ["AIの応答を取得できませんでした。時間をおいて再度お試しください。"],
+            "watch_points": ["AI応答がタイムアウトしたか、一時的に取得できませんでした。もう一度試してください。"],
+            "error_type": type(e).__name__,
         }
 
 
@@ -1527,7 +1542,7 @@ with tabs[3]:
             key="compare_ai_button",
             use_container_width=True,
         ):
-            with st.spinner("Atlas AIが比較データを整理中..."):
+            with st.spinner("Atlas AIが比較データを整理中...（最大20秒）"):
                 st.session_state.comparison_ai_result = analyze_comparison_with_ai(
                     compare_payload_json
                 )
@@ -1538,13 +1553,22 @@ with tabs[3]:
             ai_result = st.session_state.comparison_ai_result
 
         if ai_result:
-            st.success(
-                "### 🧭 全体像\n\n"
-                + ai_result.get(
-                    "overview",
-                    "選択した銘柄の価格トレンドとAtlas Scoreを比較しました。",
+            if ai_result.get("ok", True):
+                st.success(
+                    "### 🧭 全体像\n\n"
+                    + ai_result.get(
+                        "overview",
+                        "選択した銘柄の価格トレンドとAtlas Scoreを比較しました。",
+                    )
                 )
-            )
+            else:
+                st.warning(
+                    "### 🤖 AI解説を取得できませんでした\n\n"
+                    + ai_result.get(
+                        "overview",
+                        "基本比較表とグラフはそのまま確認できます。",
+                    )
+                )
 
             company_notes = ai_result.get("company_notes", [])
             if company_notes:
