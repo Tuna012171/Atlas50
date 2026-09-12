@@ -3005,6 +3005,7 @@ with tabs[7]:
         "watch_region": "すべて",
         "watch_sector_group": "すべて",
         "watch_sort": "Atlas Scoreが高い順",
+        "watch_limit": 12,
     }
     for watch_key, watch_default in watch_defaults.items():
         if watch_key not in st.session_state:
@@ -3045,6 +3046,7 @@ with tabs[7]:
         st.session_state.watch_sma60 = False
         st.session_state.watch_region = "すべて"
         st.session_state.watch_sector_group = "すべて"
+        st.session_state.watch_limit = 12
 
     w1, w2, w3 = st.columns(3)
     min_watch_score = w1.slider(
@@ -3118,6 +3120,13 @@ with tabs[7]:
         key="watch_sort",
     )
 
+    watch_limit = st.selectbox(
+        "表示件数",
+        [12, 24, 50],
+        key="watch_limit",
+        help="条件一致が多いときに、画面へ表示するカード数を切り替えます。",
+    )
+
     watch_df = df.copy()
     watch_df["業種グループ"] = watch_df["業種"].map(SECTOR_GROUPS).fillna(watch_df["業種"])
 
@@ -3142,6 +3151,7 @@ with tabs[7]:
         "出来高倍率が高い順": "出来高倍率",
     }
     watch_df = watch_df.sort_values(sort_map[sort_label], ascending=False).copy()
+    watch_display_df = watch_df.head(int(watch_limit)).copy()
 
     active_conditions = [f"Score {min_watch_score:.0f}以上"]
     if min_watch_1m > -100:
@@ -3175,8 +3185,10 @@ with tabs[7]:
     if watch_df.empty:
         st.warning("現在の条件に一致する銘柄はありません。条件を少し緩めて確認してください。")
     else:
+        st.caption(f"表示中：{len(watch_display_df)} / {len(watch_df)}社")
+
         watch_cards = []
-        for _, watch_row in watch_df.iterrows():
+        for _, watch_row in watch_display_df.iterrows():
             one_month_text = _pct_text(watch_row["1か月"])
             three_month_text = _pct_text(watch_row["3か月"])
             volume_text = f"{float(watch_row['出来高倍率']):.2f}x" if pd.notna(watch_row["出来高倍率"]) else "-"
@@ -3197,7 +3209,7 @@ with tabs[7]:
                 f'<div class="mobile-detail-item"><div class="mobile-detail-label">出来高倍率</div><div class="mobile-detail-value">{volume_text}</div></div>'
                 f'<div class="mobile-detail-item"><div class="mobile-detail-label">20日線比</div><div class="mobile-detail-value">{sma20_text}</div></div>'
                 '</div>'
-                f'<div class="mobile-detail-judge">{html.escape(str(watch_row["判定"]))}</div>'
+                f'<div class="mobile-detail-judge">判定：{html.escape(str(watch_row["判定"]))}</div>'
                 '</div>'
             )
 
