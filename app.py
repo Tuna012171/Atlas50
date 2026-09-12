@@ -150,6 +150,47 @@ HTML要素だけを隠す方式より、不要な空白が残りにくい。
     display: none;
 }
 
+.st-key-pulse_region_mobile {
+    display: none;
+}
+
+.pulse-region-card {
+    border: 1px solid rgba(120, 120, 120, 0.20);
+    border-radius: 14px;
+    padding: 13px 14px;
+    margin-bottom: 10px;
+}
+
+.pulse-region-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+}
+
+.pulse-region-name {
+    font-size: 1rem;
+    font-weight: 750;
+}
+
+.pulse-region-count {
+    font-size: 0.78rem;
+    opacity: 0.65;
+    white-space: nowrap;
+}
+
+.pulse-region-score {
+    margin-top: 9px;
+    font-size: 0.92rem;
+    font-weight: 700;
+}
+
+.pulse-region-stats {
+    margin-top: 7px;
+    font-size: 0.86rem;
+    line-height: 1.55;
+}
+
 .compare-card {
     border: 1px solid rgba(120, 120, 120, 0.20);
     border-radius: 14px;
@@ -220,11 +261,13 @@ HTML要素だけを隠す方式より、不要な空白が残りにくい。
     }
 
     .st-key-world50_table,
-    .st-key-compare_table {
+    .st-key-compare_table,
+    .st-key-pulse_region_table {
         display: none;
     }
 
-    .st-key-compare_mobile {
+    .st-key-compare_mobile,
+    .st-key-pulse_region_mobile {
         display: block;
     }
 
@@ -1255,10 +1298,16 @@ with tabs[0]:
         f"**{pulse['icon']} 全体像：{pulse['label']}**\n\n"
         f"{pulse['summary']}"
     )
+    pulse_box.caption(
+        "判定基準：『1か月プラス銘柄の割合』と『20日線より上の銘柄割合』を平均し、"
+        "Atlas50の平均1か月騰落率と合わせて判定しています。3か月プラス銘柄数は補助情報です。"
+    )
 
     with st.expander("🌍 地域別の状態を見る"):
         region_show = pulse["region"].copy()
-        st.dataframe(
+
+        region_table = st.container(key="pulse_region_table")
+        region_table.dataframe(
             region_show,
             use_container_width=True,
             hide_index=True,
@@ -1270,6 +1319,29 @@ with tabs[0]:
                 "3か月平均": st.column_config.NumberColumn(format="%.2f%%"),
             },
         )
+
+        region_mobile = st.container(key="pulse_region_mobile")
+        region_cards = ""
+        for _, region_row in region_show.iterrows():
+            region_name = str(region_row["地域"])
+            region_count = int(region_row["銘柄数"])
+            region_score = float(region_row["平均Score"])
+            region_1m = float(region_row["1か月平均"])
+            region_3m = float(region_row["3か月平均"])
+            region_cards += (
+                f'<div class="pulse-region-card">'
+                f'<div class="pulse-region-head">'
+                f'<div class="pulse-region-name">🌍 {region_name}</div>'
+                f'<div class="pulse-region-count">{region_count}銘柄</div>'
+                f'</div>'
+                f'<div class="pulse-region-score">Atlas Score平均 {region_score:.1f}</div>'
+                f'<div class="pulse-region-stats">'
+                f'1か月平均 {region_1m:+.2f}% ｜ 3か月平均 {region_3m:+.2f}%'
+                f'</div>'
+                f'</div>'
+            )
+        region_mobile.markdown(region_cards, unsafe_allow_html=True)
+
         st.caption("※ 地域別の平均はAtlas50に含まれる銘柄だけを集計しています。市場全体の指数ではありません。")
 
     st.markdown("## 🔥 今日の注目 TOP10")
