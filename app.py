@@ -336,7 +336,72 @@ HTML要素だけを隠す方式より、不要な空白が残りにくい。
     font-size: 0.8rem;
 }
 
+
+.atlas-radar-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px;
+    margin-top: 10px;
+    margin-bottom: 8px;
+}
+
+.atlas-radar-panel {
+    border: 1px solid rgba(120, 120, 120, 0.20);
+    border-radius: 14px;
+    padding: 14px;
+    min-width: 0;
+}
+
+.atlas-radar-title {
+    font-size: 1rem;
+    font-weight: 800;
+}
+
+.atlas-radar-sub {
+    margin-top: 3px;
+    font-size: 0.77rem;
+    opacity: 0.62;
+    line-height: 1.45;
+}
+
+.atlas-radar-item {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 10px 0;
+    border-bottom: 1px solid rgba(120, 120, 120, 0.14);
+}
+
+.atlas-radar-item:last-child {
+    border-bottom: 0;
+    padding-bottom: 0;
+}
+
+.atlas-radar-company {
+    font-size: 0.91rem;
+    font-weight: 720;
+    overflow-wrap: anywhere;
+}
+
+.atlas-radar-meta {
+    margin-top: 2px;
+    font-size: 0.74rem;
+    opacity: 0.63;
+    line-height: 1.45;
+}
+
+.atlas-radar-value {
+    font-size: 0.92rem;
+    font-weight: 800;
+    white-space: nowrap;
+}
+
 @media (max-width: 1100px) {
+    .atlas-radar-grid {
+        grid-template-columns: 1fr;
+    }
+
     .mobile-list-wrap {
         display: block;
     }
@@ -805,6 +870,39 @@ def _build_atlas_pulse(full_df):
         "icon": icon,
         "summary": summary,
         "region": region,
+    }
+
+
+def _build_atlas_radar(full_df):
+    """Atlas50内で直近の変化が目立つ銘柄を、推奨ではなく観察用に抽出する。"""
+    data = full_df.copy()
+
+    for col in ["1か月", "3か月", "出来高倍率", "Atlas Score"]:
+        data[col] = pd.to_numeric(data[col], errors="coerce")
+
+    up = (
+        data.dropna(subset=["1か月"])
+        .sort_values("1か月", ascending=False)
+        .head(3)
+        .copy()
+    )
+    down = (
+        data.dropna(subset=["1か月"])
+        .sort_values("1か月", ascending=True)
+        .head(3)
+        .copy()
+    )
+    volume = (
+        data.dropna(subset=["出来高倍率"])
+        .sort_values("出来高倍率", ascending=False)
+        .head(3)
+        .copy()
+    )
+
+    return {
+        "up": up,
+        "down": down,
+        "volume": volume,
     }
 
 
@@ -1430,6 +1528,61 @@ with tabs[0]:
         region_mobile.markdown(region_cards, unsafe_allow_html=True)
 
         st.caption("※ 地域別の平均はAtlas50に含まれる銘柄だけを集計しています。市場全体の指数ではありません。")
+
+    st.markdown("### 📡 Atlas Radar")
+    st.caption("Atlas50の中から、直近1か月の値動きや出来高の変化が目立つ銘柄を確認します。変化の大きさは買い・売りの推奨を意味しません。")
+
+    radar = _build_atlas_radar(df)
+
+    def _radar_items_html(frame, mode):
+        items = []
+        for _, radar_row in frame.iterrows():
+            company = html.escape(str(radar_row["会社名"]))
+            country = html.escape(str(radar_row["国"]))
+            score = float(radar_row["Atlas Score"]) if pd.notna(radar_row["Atlas Score"]) else 0.0
+            one_m = float(radar_row["1か月"]) * 100 if pd.notna(radar_row["1か月"]) else None
+            three_m = float(radar_row["3か月"]) * 100 if pd.notna(radar_row["3か月"]) else None
+            volume_ratio = float(radar_row["出来高倍率"]) if pd.notna(radar_row["出来高倍率"]) else None
+
+            if mode == "volume":
+                main_value = f"{volume_ratio:.2f}x" if volume_ratio is not None else "-"
+                meta = f"{country} ｜ 1か月 {one_m:+.2f}% ｜ Score {score:.1f}" if one_m is not None else f"{country} ｜ Score {score:.1f}"
+            else:
+                main_value = f"{one_m:+.2f}%" if one_m is not None else "-"
+                meta = f"{country} ｜ 3か月 {three_m:+.2f}% ｜ Score {score:.1f}" if three_m is not None else f"{country} ｜ Score {score:.1f}"
+
+            items.append(
+                '<div class="atlas-radar-item">'
+                '<div>'
+                f'<div class="atlas-radar-company">{company}</div>'
+                f'<div class="atlas-radar-meta">{meta}</div>'
+                '</div>'
+                f'<div class="atlas-radar-value">{main_value}</div>'
+                '</div>'
+            )
+        return "".join(items) or '<div class="atlas-radar-meta">表示できるデータがありません。</div>'
+
+    radar_html = (
+        '<div class="atlas-radar-grid">'
+        '<div class="atlas-radar-panel">'
+        '<div class="atlas-radar-title">📈 1か月上昇が目立つ</div>'
+        '<div class="atlas-radar-sub">直近1か月の騰落率が大きい順に3社</div>'
+        + _radar_items_html(radar["up"], "up")
+        + '</div>'
+        '<div class="atlas-radar-panel">'
+        '<div class="atlas-radar-title">📉 1か月下落が目立つ</div>'
+        '<div class="atlas-radar-sub">直近1か月の下落率が大きい順に3社</div>'
+        + _radar_items_html(radar["down"], "down")
+        + '</div>'
+        '<div class="atlas-radar-panel">'
+        '<div class="atlas-radar-title">🔊 出来高が目立つ</div>'
+        '<div class="atlas-radar-sub">直近出来高 ÷ 20日平均が大きい順に3社</div>'
+        + _radar_items_html(radar["volume"], "volume")
+        + '</div>'
+        '</div>'
+    )
+    st.markdown(radar_html, unsafe_allow_html=True)
+    st.caption("※ Atlas Radarは現在の値動き・出来高を整理する観察用表示です。急な上昇・下落や出来高増加だけで将来の値動きは判断できません。")
 
     st.markdown("## 🔥 今日の注目 TOP10")
     st.caption("Atlas Scoreをもとに、現在の注目度が高い銘柄を表示しています。")
