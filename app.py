@@ -85,6 +85,40 @@ NEWS_ALIASES = {
     "Johnson & Johnson": ["johnson & johnson", "j&j"],
 }
 
+# Atlas50の29業種を、比較しやすい9つの大分類にまとめる。
+# これはAtlas50内だけの独自グルーピングで、市場標準のセクター分類ではない。
+SECTOR_GROUPS = {
+    "半導体": "半導体・電子",
+    "半導体・電子": "半導体・電子",
+    "半導体装置": "半導体・電子",
+    "ソフトウェア": "ソフトウェア・IT",
+    "ITサービス": "ソフトウェア・IT",
+    "情報サービス": "ソフトウェア・IT",
+    "通信・広告": "インターネット・EC",
+    "EC・クラウド": "インターネット・EC",
+    "インターネット": "インターネット・EC",
+    "ECソフトウェア": "インターネット・EC",
+    "EC・フィンテック": "インターネット・EC",
+    "EC・デジタル": "インターネット・EC",
+    "金融": "金融・決済",
+    "銀行": "金融・決済",
+    "決済": "金融・決済",
+    "医薬品": "ヘルスケア",
+    "ヘルスケア": "ヘルスケア",
+    "小売": "消費・生活",
+    "生活必需品": "消費・生活",
+    "食品": "消費・生活",
+    "高級消費財": "消費・生活",
+    "エネルギー": "エネルギー・資源",
+    "複合・エネルギー": "エネルギー・資源",
+    "資源": "エネルギー・資源",
+    "自動車": "自動車・産業",
+    "FA・電子機器": "自動車・産業",
+    "テクノロジー": "テクノロジー・通信",
+    "電機・エンタメ": "テクノロジー・通信",
+    "投資・通信": "テクノロジー・通信",
+}
+
 
 # ------------------------------
 # 見た目
@@ -337,6 +371,39 @@ HTML要素だけを隠す方式より、不要な空白が残りにくい。
 }
 
 
+.sector-spotlight-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px;
+    margin: 10px 0 12px 0;
+}
+
+.sector-spotlight-card {
+    border: 1px solid rgba(120, 120, 120, 0.20);
+    border-radius: 14px;
+    padding: 13px 14px;
+    min-width: 0;
+}
+
+.sector-spotlight-label {
+    font-size: 0.76rem;
+    opacity: 0.62;
+}
+
+.sector-spotlight-value {
+    margin-top: 5px;
+    font-size: 1rem;
+    font-weight: 800;
+    overflow-wrap: anywhere;
+}
+
+.sector-spotlight-meta {
+    margin-top: 4px;
+    font-size: 0.78rem;
+    opacity: 0.66;
+    line-height: 1.45;
+}
+
 .atlas-radar-grid {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -398,7 +465,8 @@ HTML要素だけを隠す方式より、不要な空白が残りにくい。
 }
 
 @media (max-width: 1100px) {
-    .atlas-radar-grid {
+    .atlas-radar-grid,
+    .sector-spotlight-grid {
         grid-template-columns: 1fr;
     }
 
@@ -904,6 +972,70 @@ def _build_atlas_radar(full_df):
         "down": down,
         "volume": volume,
     }
+
+
+def _build_sector_heatmap(full_df):
+    """Atlas50内の業種を大分類し、複数期間の平均値をヒートマップ用に整理する。"""
+    data = full_df.copy()
+    data["業種グループ"] = data["業種"].map(SECTOR_GROUPS).fillna(data["業種"])
+
+    for col in ["1か月", "3か月", "6か月", "Atlas Score"]:
+        data[col] = pd.to_numeric(data[col], errors="coerce")
+
+    data["1か月プラス"] = (data["1か月"] > 0).astype(float)
+
+    summary = (
+        data.groupby("業種グループ", dropna=False)
+        .agg(
+            銘柄数=("Ticker", "count"),
+            平均Score=("Atlas Score", "mean"),
+            一か月平均=("1か月", "mean"),
+            三か月平均=("3か月", "mean"),
+            六か月平均=("6か月", "mean"),
+            一か月プラス率=("1か月プラス", "mean"),
+        )
+        .reset_index()
+    )
+
+    summary["平均Score"] = summary["平均Score"].round(1)
+    summary["1か月平均"] = (summary.pop("一か月平均") * 100).round(2)
+    summary["3か月平均"] = (summary.pop("三か月平均") * 100).round(2)
+    summary["6か月平均"] = (summary.pop("六か月平均") * 100).round(2)
+    summary["1か月プラス率"] = (summary.pop("一か月プラス率") * 100).round(0)
+    summary = summary.sort_values(["平均Score", "銘柄数"], ascending=[False, False]).reset_index(drop=True)
+
+    metric_settings = [
+        ("1か月", "1か月平均", 15.0),
+        ("3か月", "3か月平均", 30.0),
+        ("6か月", "6か月平均", 50.0),
+        ("Atlas Score", "平均Score", None),
+    ]
+
+    heat_rows = []
+    for _, sector_row in summary.iterrows():
+        for metric_name, source_col, scale_base in metric_settings:
+            value = float(sector_row[source_col]) if pd.notna(sector_row[source_col]) else 0.0
+            if metric_name == "Atlas Score":
+                heat = max(-1.0, min(1.0, (value - 50.0) / 30.0))
+                display = f"{value:.1f}"
+            else:
+                heat = max(-1.0, min(1.0, value / scale_base))
+                display = f"{value:+.1f}%"
+
+            heat_rows.append(
+                {
+                    "業種グループ": sector_row["業種グループ"],
+                    "指標": metric_name,
+                    "値": value,
+                    "表示": display,
+                    "熱度": heat,
+                    "文字色": "#ffffff" if abs(heat) >= 0.58 else "#1f2937",
+                    "銘柄数": int(sector_row["銘柄数"]),
+                    "1か月プラス率": float(sector_row["1か月プラス率"]),
+                }
+            )
+
+    return summary, pd.DataFrame(heat_rows)
 
 
 def score_parts(cur, r1w, r1m, r3m, sma5, sma20, sma60, rsi, vr, dist_high):
@@ -1583,6 +1715,100 @@ with tabs[0]:
     )
     st.markdown(radar_html, unsafe_allow_html=True)
     st.caption("※ Atlas Radarは現在の値動き・出来高を整理する観察用表示です。急な上昇・下落や出来高増加だけで将来の値動きは判断できません。")
+
+    st.markdown("### 🧩 業種別ヒートマップ")
+    st.caption(
+        "Atlas50の29業種を9つの大分類にまとめ、期間別の平均値から強弱の分布を確認します。"
+        "色だけでなくセル内の実数も合わせて確認してください。"
+    )
+
+    sector_summary, sector_heat = _build_sector_heatmap(df)
+
+    if not sector_summary.empty:
+        best_score = sector_summary.sort_values("平均Score", ascending=False).iloc[0]
+        best_1m = sector_summary.sort_values("1か月平均", ascending=False).iloc[0]
+        best_breadth = sector_summary.sort_values(["1か月プラス率", "平均Score"], ascending=[False, False]).iloc[0]
+
+        sector_spotlight_html = (
+            '<div class="sector-spotlight-grid">'
+            '<div class="sector-spotlight-card">'
+            '<div class="sector-spotlight-label">🎯 平均Score上位</div>'
+            f'<div class="sector-spotlight-value">{html.escape(str(best_score["業種グループ"]))}</div>'
+            f'<div class="sector-spotlight-meta">Score {float(best_score["平均Score"]):.1f} ｜ {int(best_score["銘柄数"])}銘柄</div>'
+            '</div>'
+            '<div class="sector-spotlight-card">'
+            '<div class="sector-spotlight-label">📈 1か月平均上位</div>'
+            f'<div class="sector-spotlight-value">{html.escape(str(best_1m["業種グループ"]))}</div>'
+            f'<div class="sector-spotlight-meta">1か月 {float(best_1m["1か月平均"]):+.2f}% ｜ Score {float(best_1m["平均Score"]):.1f}</div>'
+            '</div>'
+            '<div class="sector-spotlight-card">'
+            '<div class="sector-spotlight-label">🌐 上昇の広がり上位</div>'
+            f'<div class="sector-spotlight-value">{html.escape(str(best_breadth["業種グループ"]))}</div>'
+            f'<div class="sector-spotlight-meta">1か月プラス {float(best_breadth["1か月プラス率"]):.0f}% ｜ {int(best_breadth["銘柄数"])}銘柄</div>'
+            '</div>'
+            '</div>'
+        )
+        st.markdown(sector_spotlight_html, unsafe_allow_html=True)
+
+        sector_order = sector_summary["業種グループ"].tolist()
+        metric_order = ["1か月", "3か月", "6か月", "Atlas Score"]
+
+        heat_base = alt.Chart(sector_heat).encode(
+            x=alt.X(
+                "指標:N",
+                sort=metric_order,
+                title=None,
+                axis=alt.Axis(labelAngle=0, labelFontSize=12),
+            ),
+            y=alt.Y(
+                "業種グループ:N",
+                sort=sector_order,
+                title=None,
+                axis=alt.Axis(labelLimit=150, labelFontSize=12),
+            ),
+            tooltip=[
+                alt.Tooltip("業種グループ:N", title="業種グループ"),
+                alt.Tooltip("指標:N", title="指標"),
+                alt.Tooltip("表示:N", title="値"),
+                alt.Tooltip("銘柄数:Q", title="銘柄数", format=".0f"),
+                alt.Tooltip("1か月プラス率:Q", title="1か月プラス率", format=".0f"),
+            ],
+        )
+
+        heat_rect = heat_base.mark_rect(cornerRadius=4).encode(
+            color=alt.Color(
+                "熱度:Q",
+                scale=alt.Scale(domain=[-1, 0, 1], scheme="redyellowgreen"),
+                legend=None,
+            )
+        )
+        heat_text = heat_base.mark_text(fontSize=12, fontWeight="bold").encode(
+            text=alt.Text("表示:N"),
+            color=alt.Color("文字色:N", scale=None, legend=None),
+        )
+
+        sector_chart = (heat_rect + heat_text).properties(
+            height=max(330, len(sector_order) * 39)
+        ).configure_view(strokeWidth=0)
+        st.altair_chart(sector_chart, use_container_width=True)
+
+        st.caption(
+            "色の基準：騰落率は0%を中立、Atlas Scoreは50を中立として表示しています。"
+            "同じ色でも指標ごとに尺度が異なるため、セル内の数値を優先して確認してください。"
+        )
+
+        with st.expander("🗂️ 業種グループの内訳を見る"):
+            grouped_sectors = {}
+            for original_sector, grouped_sector in SECTOR_GROUPS.items():
+                grouped_sectors.setdefault(grouped_sector, []).append(original_sector)
+            for grouped_sector in sector_order:
+                members = grouped_sectors.get(grouped_sector, [grouped_sector])
+                st.markdown(f"**{grouped_sector}**：{' / '.join(members)}")
+            st.caption("※ この大分類はAtlas50内で比較しやすくするための独自分類で、市場標準のセクター分類ではありません。")
+    else:
+        st.caption("業種別データを集計できませんでした。")
+
+    st.caption("※ 業種別ヒートマップはAtlas50内の現在データを整理する観察用表示で、業種や銘柄の売買推奨ではありません。")
 
     st.markdown("## 🔥 今日の注目 TOP10")
     st.caption("Atlas Scoreをもとに、現在の注目度が高い銘柄を表示しています。")
