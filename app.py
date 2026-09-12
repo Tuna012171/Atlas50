@@ -154,7 +154,7 @@ HTML要素だけを隠す方式より、不要な空白が残りにくい。
 .st-key-favorite_mobile,
 .st-key-portfolio_mobile,
 .st-key-budget_mobile {
-    display: none;
+    display: none !important;
 }
 
 .mobile-detail-card {
@@ -323,7 +323,7 @@ HTML要素だけを隠す方式より、不要な空白が残りにくい。
     font-size: 0.8rem;
 }
 
-@media (max-width: 768px) {
+@media (max-width: 1100px) {
     .mobile-list-wrap {
         display: block;
     }
@@ -334,7 +334,7 @@ HTML要素だけを隠す方式より、不要な空白が残りにくい。
     .st-key-favorite_table,
     .st-key-portfolio_table,
     .st-key-budget_table {
-        display: none;
+        display: none !important;
     }
 
     .st-key-compare_mobile,
@@ -342,7 +342,7 @@ HTML要素だけを隠す方式より、不要な空白が残りにくい。
     .st-key-favorite_mobile,
     .st-key-portfolio_mobile,
     .st-key-budget_mobile {
-        display: block;
+        display: block !important;
     }
 
     div[data-testid="stTabs"] div[role="tablist"] {
@@ -2133,12 +2133,16 @@ with tabs[5]:
         qty_raw = p.get("株数")
         avg_raw = p.get("平均取得単価")
 
-        # data_editorの空欄はNaNになることがあるため、未入力行は計算しない。
-        if pd.isna(qty_raw) or pd.isna(avg_raw):
+        # data_editorでは未入力値が None / NaN / 空文字などになることがある。
+        # 数値へ安全に変換でき、かつ両方が正の値のときだけ計算する。
+        qty = pd.to_numeric(pd.Series([qty_raw]), errors="coerce").iloc[0]
+        avg = pd.to_numeric(pd.Series([avg_raw]), errors="coerce").iloc[0]
+
+        if pd.isna(qty) or pd.isna(avg):
             continue
 
-        qty = float(qty_raw)
-        avg = float(avg_raw)
+        qty = float(qty)
+        avg = float(avg)
 
         if qty <= 0 or avg <= 0:
             continue
