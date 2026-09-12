@@ -1878,7 +1878,7 @@ df["FX→JPY"] = df["通貨"].map(fx)
 df["円換算価格"] = df["現在値"] * df["FX→JPY"]
 
 
-tabs = st.tabs(["🏠 ホーム", "🌍 世界50", "🔎 個別分析", "⚖️ 比較", "⭐ お気に入り", "💼 保有株", "💰 予算で探す"])
+tabs = st.tabs(["🏠 ホーム", "🌍 世界50", "🔎 個別分析", "⚖️ 比較", "⭐ お気に入り", "💼 保有株", "💰 予算で探す", "🔔 条件で探す"])
 
 
 # ------------------------------
@@ -2980,6 +2980,258 @@ with tabs[6]:
             )
     else:
         st.info("現在の予算内で1株買える企業はありません。")
+
+
+# ------------------------------
+# 条件で探す
+# ------------------------------
+with tabs[7]:
+    st.markdown("## 🔔 条件で探す")
+    st.caption(
+        "Atlas50を自分の条件で絞り込みます。ここで表示される銘柄は条件一致の一覧であり、"
+        "買い・売りの推奨ではありません。"
+    )
+
+    st.markdown("### ⚡ 条件プリセット")
+    st.caption("よく使う観察条件をワンクリックでセットできます。数値は下で自由に変更できます。")
+
+    watch_defaults = {
+        "watch_score": 0.0,
+        "watch_1m": -100.0,
+        "watch_3m": -100.0,
+        "watch_volume": 0.0,
+        "watch_sma20": False,
+        "watch_sma60": False,
+        "watch_region": "すべて",
+        "watch_sector_group": "すべて",
+        "watch_sort": "Atlas Scoreが高い順",
+    }
+    for watch_key, watch_default in watch_defaults.items():
+        if watch_key not in st.session_state:
+            st.session_state[watch_key] = watch_default
+
+    preset1, preset2, preset3, preset4 = st.columns(4)
+
+    if preset1.button("📈 上向き確認", use_container_width=True, key="watch_preset_up"):
+        st.session_state.watch_score = 60.0
+        st.session_state.watch_1m = 0.0
+        st.session_state.watch_3m = 0.0
+        st.session_state.watch_volume = 0.0
+        st.session_state.watch_sma20 = True
+        st.session_state.watch_sma60 = False
+
+    if preset2.button("🧭 中期トレンド", use_container_width=True, key="watch_preset_mid"):
+        st.session_state.watch_score = 60.0
+        st.session_state.watch_1m = 0.0
+        st.session_state.watch_3m = 5.0
+        st.session_state.watch_volume = 0.0
+        st.session_state.watch_sma20 = True
+        st.session_state.watch_sma60 = True
+
+    if preset3.button("🔊 出来高注目", use_container_width=True, key="watch_preset_volume"):
+        st.session_state.watch_score = 0.0
+        st.session_state.watch_1m = -100.0
+        st.session_state.watch_3m = -100.0
+        st.session_state.watch_volume = 1.5
+        st.session_state.watch_sma20 = False
+        st.session_state.watch_sma60 = False
+
+    if preset4.button("↩️ リセット", use_container_width=True, key="watch_preset_reset"):
+        st.session_state.watch_score = 0.0
+        st.session_state.watch_1m = -100.0
+        st.session_state.watch_3m = -100.0
+        st.session_state.watch_volume = 0.0
+        st.session_state.watch_sma20 = False
+        st.session_state.watch_sma60 = False
+        st.session_state.watch_region = "すべて"
+        st.session_state.watch_sector_group = "すべて"
+
+    w1, w2, w3 = st.columns(3)
+    min_watch_score = w1.slider(
+        "最低Atlas Score",
+        min_value=0.0,
+        max_value=100.0,
+        step=1.0,
+        key="watch_score",
+    )
+    min_watch_1m = w2.slider(
+        "1か月騰落率の下限",
+        min_value=-100.0,
+        max_value=100.0,
+        step=1.0,
+        format="%.0f%%",
+        key="watch_1m",
+    )
+    min_watch_3m = w3.slider(
+        "3か月騰落率の下限",
+        min_value=-100.0,
+        max_value=200.0,
+        step=1.0,
+        format="%.0f%%",
+        key="watch_3m",
+    )
+
+    w4, w5, w6 = st.columns(3)
+    min_watch_volume = w4.number_input(
+        "最低出来高倍率",
+        min_value=0.0,
+        max_value=10.0,
+        step=0.1,
+        help="直近出来高 ÷ 20日平均出来高。1.5なら20日平均の約1.5倍です。",
+        key="watch_volume",
+    )
+
+    region_options = ["すべて"] + sorted(df["地域"].dropna().astype(str).unique().tolist())
+    current_watch_region = st.session_state.get("watch_region", "すべて")
+    if current_watch_region not in region_options:
+        st.session_state.watch_region = "すべて"
+    watch_region = w5.selectbox(
+        "地域",
+        region_options,
+        key="watch_region",
+    )
+
+    watch_sector_series = df["業種"].map(SECTOR_GROUPS).fillna(df["業種"])
+    sector_group_options = ["すべて"] + sorted(watch_sector_series.dropna().astype(str).unique().tolist())
+    current_watch_sector = st.session_state.get("watch_sector_group", "すべて")
+    if current_watch_sector not in sector_group_options:
+        st.session_state.watch_sector_group = "すべて"
+    watch_sector_group = w6.selectbox(
+        "業種グループ",
+        sector_group_options,
+        key="watch_sector_group",
+    )
+
+    t1, t2 = st.columns(2)
+    only_above_sma20 = t1.toggle(
+        "20日線より上だけ",
+        key="watch_sma20",
+    )
+    only_above_sma60 = t2.toggle(
+        "60日線より上だけ",
+        key="watch_sma60",
+    )
+
+    sort_label = st.selectbox(
+        "並び順",
+        ["Atlas Scoreが高い順", "1か月上昇率が高い順", "3か月上昇率が高い順", "出来高倍率が高い順"],
+        key="watch_sort",
+    )
+
+    watch_df = df.copy()
+    watch_df["業種グループ"] = watch_df["業種"].map(SECTOR_GROUPS).fillna(watch_df["業種"])
+
+    watch_df = watch_df[watch_df["Atlas Score"].fillna(-1) >= min_watch_score]
+    watch_df = watch_df[(watch_df["1か月"].fillna(-999) * 100) >= min_watch_1m]
+    watch_df = watch_df[(watch_df["3か月"].fillna(-999) * 100) >= min_watch_3m]
+    watch_df = watch_df[watch_df["出来高倍率"].fillna(-1) >= min_watch_volume]
+
+    if watch_region != "すべて":
+        watch_df = watch_df[watch_df["地域"].astype(str) == watch_region]
+    if watch_sector_group != "すべて":
+        watch_df = watch_df[watch_df["業種グループ"].astype(str) == watch_sector_group]
+    if only_above_sma20:
+        watch_df = watch_df[watch_df["20日線比"].fillna(-999) > 0]
+    if only_above_sma60:
+        watch_df = watch_df[watch_df["60日線比"].fillna(-999) > 0]
+
+    sort_map = {
+        "Atlas Scoreが高い順": "Atlas Score",
+        "1か月上昇率が高い順": "1か月",
+        "3か月上昇率が高い順": "3か月",
+        "出来高倍率が高い順": "出来高倍率",
+    }
+    watch_df = watch_df.sort_values(sort_map[sort_label], ascending=False).copy()
+
+    active_conditions = [f"Score {min_watch_score:.0f}以上"]
+    if min_watch_1m > -100:
+        active_conditions.append(f"1か月 {min_watch_1m:+.0f}%以上")
+    if min_watch_3m > -100:
+        active_conditions.append(f"3か月 {min_watch_3m:+.0f}%以上")
+    if min_watch_volume > 0:
+        active_conditions.append(f"出来高 {min_watch_volume:.1f}x以上")
+    if watch_region != "すべて":
+        active_conditions.append(f"地域 {watch_region}")
+    if watch_sector_group != "すべて":
+        active_conditions.append(f"業種 {watch_sector_group}")
+    if only_above_sma20:
+        active_conditions.append("20日線より上")
+    if only_above_sma60:
+        active_conditions.append("60日線より上")
+
+    st.info("**現在の条件**：" + " ｜ ".join(active_conditions))
+
+    r1, r2, r3, r4 = st.columns(4)
+    r1.metric("🔎 条件一致", f"{len(watch_df)}社")
+    if not watch_df.empty:
+        r2.metric("🎯 平均Score", f"{watch_df['Atlas Score'].mean():.1f}")
+        r3.metric("📈 平均1か月", f"{watch_df['1か月'].mean() * 100:+.2f}%")
+        r4.metric("🔊 最大出来高", f"{watch_df['出来高倍率'].max():.2f}x")
+    else:
+        r2.metric("🎯 平均Score", "-")
+        r3.metric("📈 平均1か月", "-")
+        r4.metric("🔊 最大出来高", "-")
+
+    if watch_df.empty:
+        st.warning("現在の条件に一致する銘柄はありません。条件を少し緩めて確認してください。")
+    else:
+        watch_cards = []
+        for _, watch_row in watch_df.iterrows():
+            one_month_text = _pct_text(watch_row["1か月"])
+            three_month_text = _pct_text(watch_row["3か月"])
+            volume_text = f"{float(watch_row['出来高倍率']):.2f}x" if pd.notna(watch_row["出来高倍率"]) else "-"
+            sma20_text = _pct_text(watch_row["20日線比"])
+
+            watch_cards.append(
+                '<div class="mobile-detail-card">'
+                '<div class="mobile-detail-head">'
+                '<div>'
+                f'<div class="mobile-detail-company">#{int(watch_row["順位"])} {html.escape(str(watch_row["会社名"]))}</div>'
+                f'<div class="mobile-detail-meta">{html.escape(str(watch_row["国"]))} ・ {html.escape(str(watch_row["業種グループ"]))}</div>'
+                '</div>'
+                f'<div class="mobile-detail-score">Score {float(watch_row["Atlas Score"]):.1f}</div>'
+                '</div>'
+                '<div class="mobile-detail-grid">'
+                f'<div class="mobile-detail-item"><div class="mobile-detail-label">1か月</div><div class="mobile-detail-value">{one_month_text}</div></div>'
+                f'<div class="mobile-detail-item"><div class="mobile-detail-label">3か月</div><div class="mobile-detail-value">{three_month_text}</div></div>'
+                f'<div class="mobile-detail-item"><div class="mobile-detail-label">出来高倍率</div><div class="mobile-detail-value">{volume_text}</div></div>'
+                f'<div class="mobile-detail-item"><div class="mobile-detail-label">20日線比</div><div class="mobile-detail-value">{sma20_text}</div></div>'
+                '</div>'
+                f'<div class="mobile-detail-judge">{html.escape(str(watch_row["判定"]))}</div>'
+                '</div>'
+            )
+
+        st.markdown(
+            '<div class="atlas-card-grid">' + "".join(watch_cards) + '</div>',
+            unsafe_allow_html=True,
+        )
+
+        with st.expander("📋 条件一致銘柄を表で見る"):
+            watch_table = watch_df[[
+                "順位", "会社名", "国", "業種グループ", "1か月", "3か月",
+                "出来高倍率", "20日線比", "60日線比", "Atlas Score", "判定",
+            ]].copy()
+            for pct_col in ["1か月", "3か月", "20日線比", "60日線比"]:
+                watch_table[pct_col] = (watch_table[pct_col] * 100).round(2)
+
+            st.dataframe(
+                watch_table,
+                use_container_width=True,
+                hide_index=True,
+                column_config={
+                    "1か月": st.column_config.NumberColumn(format="%.2f%%"),
+                    "3か月": st.column_config.NumberColumn(format="%.2f%%"),
+                    "出来高倍率": st.column_config.NumberColumn(format="%.2fx"),
+                    "20日線比": st.column_config.NumberColumn(format="%.2f%%"),
+                    "60日線比": st.column_config.NumberColumn(format="%.2f%%"),
+                    "Atlas Score": st.column_config.ProgressColumn(min_value=0, max_value=100, format="%.1f"),
+                },
+            )
+
+    st.caption(
+        "※ 条件で探す機能はAtlas50内の現在データを機械的に絞り込む観察ツールです。"
+        "条件一致は将来の上昇や投資成果を意味しません。"
+    )
 
 
 # ------------------------------
