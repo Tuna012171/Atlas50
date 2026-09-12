@@ -1,6 +1,8 @@
 import html
 import time
 import json
+import hashlib
+import io
 
 import altair as alt
 import pandas as pd
@@ -10,6 +12,10 @@ from openai import OpenAI
 
 
 st.set_page_config(page_title="Atlas 50", page_icon="🌍", layout="wide")
+
+APP_VERSION = "3.0"
+APP_LABEL = "Complete"
+AI_TIMEOUT_SECONDS = 20.0
 
 # ------------------------------
 # 基本設定
@@ -67,6 +73,9 @@ COMPANIES = [
     ('RELX', 'RELX', '英国', '欧州', '情報サービス', 'USD'),
 ]
 
+COMPANY_META = {row[0]: row for row in COMPANIES}
+COMPANY_BY_NAME = {row[1]: row for row in COMPANIES}
+
 MONTHLY_BUDGET_DEFAULT = 20000
 HISTORY_PERIOD = "2y"  # 1年騰落率を安定して計算するため、2年分取得する
 
@@ -118,6 +127,26 @@ SECTOR_GROUPS = {
     "電機・エンタメ": "テクノロジー・通信",
     "投資・通信": "テクノロジー・通信",
 }
+
+WATCH_DEFAULTS = {
+    "watch_score": 0.0,
+    "watch_1m": -100.0,
+    "watch_3m": -100.0,
+    "watch_volume": 0.0,
+    "watch_sma20": False,
+    "watch_sma60": False,
+    "watch_region": "すべて",
+    "watch_sector_group": "すべて",
+    "watch_sort": "Atlas Scoreが高い順",
+    "watch_limit": 12,
+}
+
+WATCH_SORT_OPTIONS = [
+    "Atlas Scoreが高い順",
+    "1か月上昇率が高い順",
+    "3か月上昇率が高い順",
+    "出来高倍率が高い順",
+]
 
 
 # ------------------------------
@@ -646,9 +675,107 @@ HTML要素だけを隠す方式より、不要な空白が残りにくい。
     white-space: nowrap;
 }
 
+
+.atlas-version-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    margin-top: -12px;
+    margin-bottom: 18px;
+}
+
+.atlas-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 4px 9px;
+    border: 1px solid rgba(120, 120, 120, 0.22);
+    border-radius: 999px;
+    font-size: 0.78rem;
+    opacity: 0.78;
+}
+
+.atlas-guide-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 10px;
+    margin: 8px 0 4px 0;
+}
+
+.atlas-guide-card {
+    border: 1px solid rgba(120, 120, 120, 0.18);
+    border-radius: 12px;
+    padding: 11px 12px;
+    min-width: 0;
+}
+
+.atlas-guide-step {
+    font-size: 0.72rem;
+    opacity: 0.62;
+}
+
+.atlas-guide-title {
+    margin-top: 3px;
+    font-weight: 800;
+    font-size: 0.92rem;
+}
+
+.atlas-guide-text {
+    margin-top: 3px;
+    font-size: 0.78rem;
+    line-height: 1.45;
+    opacity: 0.75;
+}
+
+.data-health-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 8px;
+    margin-top: 8px;
+}
+
+.data-health-item {
+    border: 1px solid rgba(120, 120, 120, 0.18);
+    border-radius: 11px;
+    padding: 9px 10px;
+}
+
+.data-health-label {
+    font-size: 0.70rem;
+    opacity: 0.62;
+}
+
+.data-health-value {
+    margin-top: 2px;
+    font-size: 0.90rem;
+    font-weight: 750;
+}
+
+.saved-filter-card {
+    border: 1px solid rgba(120, 120, 120, 0.18);
+    border-radius: 12px;
+    padding: 10px 12px;
+    margin-top: 8px;
+}
+
+.saved-filter-name {
+    font-size: 0.90rem;
+    font-weight: 800;
+}
+
+.saved-filter-summary {
+    margin-top: 3px;
+    font-size: 0.76rem;
+    opacity: 0.68;
+    line-height: 1.45;
+}
+
 @media (max-width: 1100px) {
     .atlas-radar-grid,
-    .sector-spotlight-grid {
+    .sector-spotlight-grid,
+    .atlas-guide-grid,
+    .data-health-grid {
         grid-template-columns: 1fr;
     }
 
@@ -1330,6 +1457,210 @@ def _render_sector_heatmap_html(summary, heat_frame):
     return "".join(desktop_parts + mobile_parts)
 
 
+def _safe_float(value, default=None):
+    """NaN/文字列を含む値を安全にfloatへ変換する。"""
+    try:
+        numeric = pd.to_numeric(pd.Series([value]), errors="coerce").iloc[0]
+        if pd.isna(numeric):
+            return default
+        return float(numeric)
+    except Exception:
+        return default
+
+
+def _build_data_health(full_df, fx_rates, error_list):
+    """取得状況をUI表示用に整理する。投資判断ではなくデータ品質確認用。"""
+    loaded = len(full_df)
+    expected = len(COMPANIES)
+    latest = str(full_df["最終日"].max()) if not full_df.empty and "最終日" in full_df else "-"
+    used_currencies = sorted(set(full_df["通貨"].dropna().astype(str))) if not full_df.empty else []
+    missing_fx = [c for c in used_currencies if c != "JPY" and not fx_rates.get(c)]
+    return {
+        "loaded": loaded,
+        "expected": expected,
+        "latest": latest,
+        "missing_fx": missing_fx,
+        "errors": list(error_list or []),
+    }
+
+
+def _watch_config_from_state():
+    config = {}
+    for key, default in WATCH_DEFAULTS.items():
+        value = st.session_state.get(key, default)
+        if isinstance(default, bool):
+            config[key] = bool(value)
+        elif isinstance(default, float):
+            config[key] = float(value)
+        elif isinstance(default, int):
+            config[key] = int(value)
+        else:
+            config[key] = str(value)
+    return config
+
+
+def _apply_watch_config(config):
+    """保存条件をウィジェット描画前にsession_stateへ安全に反映する。"""
+    if not isinstance(config, dict):
+        return
+
+    numeric_ranges = {
+        "watch_score": (0.0, 100.0),
+        "watch_1m": (-100.0, 100.0),
+        "watch_3m": (-100.0, 200.0),
+        "watch_volume": (0.0, 10.0),
+    }
+
+    for key, default in WATCH_DEFAULTS.items():
+        if key not in config:
+            continue
+        value = config[key]
+        try:
+            if isinstance(default, bool):
+                st.session_state[key] = bool(value)
+            elif isinstance(default, float):
+                number = float(value)
+                if key in numeric_ranges:
+                    low, high = numeric_ranges[key]
+                    number = max(low, min(high, number))
+                st.session_state[key] = number
+            elif isinstance(default, int):
+                number = int(value)
+                if key == "watch_limit" and number not in {12, 24, 50}:
+                    number = 12
+                st.session_state[key] = number
+            else:
+                text = str(value)
+                if key == "watch_sort" and text not in WATCH_SORT_OPTIONS:
+                    text = WATCH_DEFAULTS[key]
+                st.session_state[key] = text
+        except Exception:
+            st.session_state[key] = default
+
+
+def _watch_config_summary(config):
+    if not isinstance(config, dict):
+        return "条件を読み取れません"
+    bits = [f"Score {float(config.get('watch_score', 0)):.0f}以上"]
+    one_m = float(config.get("watch_1m", -100))
+    three_m = float(config.get("watch_3m", -100))
+    volume = float(config.get("watch_volume", 0))
+    if one_m > -100:
+        bits.append(f"1か月 {one_m:+.0f}%以上")
+    if three_m > -100:
+        bits.append(f"3か月 {three_m:+.0f}%以上")
+    if volume > 0:
+        bits.append(f"出来高 {volume:.1f}x以上")
+    region = str(config.get("watch_region", "すべて"))
+    sector = str(config.get("watch_sector_group", "すべて"))
+    if region != "すべて":
+        bits.append(region)
+    if sector != "すべて":
+        bits.append(sector)
+    if bool(config.get("watch_sma20", False)):
+        bits.append("20日線上")
+    if bool(config.get("watch_sma60", False)):
+        bits.append("60日線上")
+    return " ｜ ".join(bits)
+
+
+def _atlas_setup_payload():
+    """お気に入り・保有株・保存条件を1つのJSONとして持ち運べる形にする。"""
+    saved_filters = st.session_state.get("saved_watch_filters", {})
+    clean_saved = {
+        str(name): dict(config)
+        for name, config in saved_filters.items()
+        if isinstance(config, dict)
+    }
+
+    portfolio_records = []
+    portfolio_df = st.session_state.get("portfolio")
+    if isinstance(portfolio_df, pd.DataFrame):
+        for _, row in portfolio_df.iterrows():
+            ticker_value = row.get("Ticker")
+            if pd.isna(ticker_value):
+                continue
+            ticker = str(ticker_value).strip()
+            if not ticker or ticker not in COMPANY_META:
+                continue
+            qty = _safe_float(row.get("株数"), None)
+            avg = _safe_float(row.get("平均取得単価"), None)
+            portfolio_records.append(
+                {
+                    "Ticker": ticker,
+                    "株数": qty,
+                    "平均取得単価": avg,
+                }
+            )
+
+    return {
+        "atlas_version": APP_VERSION,
+        "favorites": sorted(str(x) for x in st.session_state.get("favorites", set())),
+        "portfolio": portfolio_records,
+        "saved_watch_filters": clean_saved,
+        "current_watch_filter": _watch_config_from_state(),
+    }
+
+
+def _apply_atlas_setup_payload(payload):
+    """アップロードされたAtlas設定を安全に反映する。"""
+    if not isinstance(payload, dict):
+        raise ValueError("JSON形式が正しくありません")
+
+    valid_tickers = {row[0] for row in COMPANIES}
+    favorites = payload.get("favorites", [])
+    if isinstance(favorites, list):
+        st.session_state.favorites = {str(t) for t in favorites if str(t) in valid_tickers}
+
+    portfolio = payload.get("portfolio", [])
+    if isinstance(portfolio, list):
+        portfolio_rows = []
+        for item in portfolio[:100]:
+            if not isinstance(item, dict):
+                continue
+            ticker = str(item.get("Ticker") or "").strip()
+            if ticker not in valid_tickers:
+                continue
+            portfolio_rows.append(
+                {
+                    "Ticker": ticker,
+                    "株数": _safe_float(item.get("株数"), None),
+                    "平均取得単価": _safe_float(item.get("平均取得単価"), None),
+                }
+            )
+        st.session_state.portfolio = pd.DataFrame(
+            portfolio_rows,
+            columns=["Ticker", "株数", "平均取得単価"],
+        )
+        st.session_state.portfolio_editor_version = int(st.session_state.get("portfolio_editor_version", 0)) + 1
+
+    st.session_state.favorites_editor_version = int(st.session_state.get("favorites_editor_version", 0)) + 1
+
+    saved = payload.get("saved_watch_filters", {})
+    if isinstance(saved, dict):
+        cleaned = {}
+        for name, config in list(saved.items())[:30]:
+            if not isinstance(config, dict):
+                continue
+            cleaned[str(name)[:40]] = {
+                key: config.get(key, default)
+                for key, default in WATCH_DEFAULTS.items()
+            }
+        st.session_state.saved_watch_filters = cleaned
+
+    current = payload.get("current_watch_filter")
+    if isinstance(current, dict):
+        _apply_watch_config(current)
+
+
+def _settings_json_bytes():
+    return json.dumps(
+        _atlas_setup_payload(),
+        ensure_ascii=False,
+        indent=2,
+    ).encode("utf-8")
+
+
 def score_parts(cur, r1w, r1m, r3m, sma5, sma20, sma60, rsi, vr, dist_high):
     # 過去バージョンとの比較可能性を保つため、Score式自体は変更しない。
     momentum_1w = max(0, min(12, 6 + r1w * 120))
@@ -1433,7 +1764,7 @@ def load_data():
             errors.append(f"batch {start // 10 + 1}: {type(e).__name__}")
 
         for t in batch:
-            _, name, country, region, sector, currency = next(x for x in COMPANIES if x[0] == t)
+            _, name, country, region, sector, currency = COMPANY_META[t]
 
             try:
                 d = _extract_one(raw, t)
@@ -1673,60 +2004,86 @@ def load_news(ticker, company_name=""):
 
 
 @st.cache_data(ttl=86400, show_spinner=False)
-def analyze_news_with_ai(company_name, title, source_summary=""):
+def analyze_news_batch_with_ai(company_name, news_payload_json):
+    """最大3件のニュースを1回のAPI呼び出しで初心者向けに整理する。"""
     try:
-        client = OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
-        source_summary = str(source_summary or "")[:1500]
+        payload = json.loads(news_payload_json)
+        if not isinstance(payload, list):
+            raise ValueError("news payload")
+        payload = payload[:3]
+
+        client = OpenAI(
+            api_key=st.secrets["OPENAI_API_KEY"],
+            timeout=AI_TIMEOUT_SECONDS,
+            max_retries=0,
+        )
 
         prompt = f"""
 あなたはAtlas50の初心者向け株式ニュース解説AIです。
+会社名: {company_name}
 
-会社名:
-{company_name}
-
-ニュース見出し:
-{title}
-
-ニュース提供元の概要:
-{source_summary or "概要なし"}
+以下のニュース最大3件だけを根拠に、それぞれを初心者向けに整理してください。
+ニュース:
+{json.dumps(payload, ensure_ascii=False, separators=(",", ":"))}
 
 次のJSONだけを返してください。
-
 {{
-  "title_ja": "初心者にも分かる短い日本語タイトル",
-  "summary": "専門用語をできるだけ使わず、2文以内でニュースの意味を説明",
-  "impact": "追い風候補・中立・リスク候補 のどれか"
+  "items": [
+    {{
+      "index": 0,
+      "title_ja": "初心者にも分かる短い日本語タイトル",
+      "summary": "専門用語をできるだけ避け、2文以内で意味を説明",
+      "impact": "追い風候補・中立・リスク候補 のどれか"
+    }}
+  ]
 }}
 
 ルール:
-- 買う・売るなどの投資推奨はしない
-- 見出しと提供元概要から分からない事実を作らない
-- 株価への方向性が判断できない場合は必ず中立
+- 入力された見出しと概要から分からない事実を作らない
+- 決算や将来業績など、入力にない情報を推測しない
+- 買う・売る・おすすめ等の投資推奨はしない
+- 株価への方向性が判断できない場合は中立
 - 断定しすぎない
-- 日本語で書く
+- indexは入力ニュースの0始まりの番号をそのまま使う
+- 日本語で簡潔に書く
 """
 
         response = client.responses.create(
             model="gpt-5.6-luna",
             input=prompt,
+            max_output_tokens=1000,
         )
-
         text = response.output_text.strip()
-
         if text.startswith("```"):
             text = text.replace("```json", "").replace("```", "").strip()
 
         parsed = json.loads(text)
-        impact = parsed.get("impact", "中立")
-        if impact not in {"追い風候補", "中立", "リスク候補"}:
-            parsed["impact"] = "中立"
-        return parsed
+        raw_items = parsed.get("items", []) if isinstance(parsed, dict) else []
+        cleaned = {}
+        for item in raw_items:
+            if not isinstance(item, dict):
+                continue
+            try:
+                idx = int(item.get("index"))
+            except Exception:
+                continue
+            if idx < 0 or idx >= len(payload):
+                continue
+            impact = str(item.get("impact", "中立")).strip()
+            if impact not in {"追い風候補", "中立", "リスク候補"}:
+                impact = "中立"
+            cleaned[idx] = {
+                "title_ja": str(item.get("title_ja") or payload[idx].get("title") or "ニュース").strip(),
+                "summary": str(item.get("summary") or "AI解説を取得できませんでした。").strip(),
+                "impact": impact,
+            }
 
-    except Exception:
+        return {"ok": True, "items": cleaned}
+    except Exception as e:
         return {
-            "title_ja": title,
-            "summary": "AI解説を取得できませんでした。",
-            "impact": "中立",
+            "ok": False,
+            "items": {},
+            "error_type": type(e).__name__,
         }
 
 
@@ -1744,7 +2101,7 @@ def analyze_comparison_with_ai(compare_payload_json):
         # max_retries=0 にして、タイムアウト後の自動再試行も抑える。
         client = OpenAI(
             api_key=st.secrets["OPENAI_API_KEY"],
-            timeout=20.0,
+            timeout=AI_TIMEOUT_SECONDS,
             max_retries=0,
         )
 
@@ -1856,27 +2213,120 @@ if "comparison_ai_result" not in st.session_state:
 if "comparison_ai_key" not in st.session_state:
     st.session_state.comparison_ai_key = None
 
+if "news_ai_result" not in st.session_state:
+    st.session_state.news_ai_result = None
+
+if "news_ai_key" not in st.session_state:
+    st.session_state.news_ai_key = None
+
+if "saved_watch_filters" not in st.session_state:
+    st.session_state.saved_watch_filters = {}
+
+if "atlas_setup_digest" not in st.session_state:
+    st.session_state.atlas_setup_digest = None
+
+if "atlas_setup_flash" not in st.session_state:
+    st.session_state.atlas_setup_flash = None
+
+if "portfolio_csv_digest" not in st.session_state:
+    st.session_state.portfolio_csv_digest = None
+
+if "portfolio_csv_flash" not in st.session_state:
+    st.session_state.portfolio_csv_flash = None
+
+if "portfolio_editor_version" not in st.session_state:
+    st.session_state.portfolio_editor_version = 0
+
+if "favorites_editor_version" not in st.session_state:
+    st.session_state.favorites_editor_version = 0
+
+if "watch_filter_flash" not in st.session_state:
+    st.session_state.watch_filter_flash = None
+
+for watch_key, watch_default in WATCH_DEFAULTS.items():
+    if watch_key not in st.session_state:
+        st.session_state[watch_key] = watch_default
+
 
 # ------------------------------
 # ヘッダー・データロード
 # ------------------------------
 st.markdown('<div class="atlas-title">ATLAS 50</div>', unsafe_allow_html=True)
 st.markdown('<div class="atlas-sub">世界の注目50社を、数分で把握する。</div>', unsafe_allow_html=True)
+st.markdown(
+    f'<div class="atlas-version-row">'
+    f'<span class="atlas-chip">🚀 V{APP_VERSION} {APP_LABEL}</span>'
+    f'<span class="atlas-chip">📚 学習・監視用</span>'
+    f'<span class="atlas-chip">🌍 50銘柄</span>'
+    f'</div>',
+    unsafe_allow_html=True,
+)
+
+if st.button("🔄 データを更新", key="refresh_market_data"):
+    load_data.clear()
+    load_fx.clear()
+    load_news.clear()
+    st.rerun()
 
 with st.spinner("世界50社と為替をチェック中..."):
     df, histories, errors = load_data()
     fx = load_fx()
 
 if df.empty:
-    st.error("株価データを取得できませんでした。右上メニューからRerunを試してください。")
+    st.error("株価データを取得できませんでした。『データを更新』を試してください。")
     with st.expander("エラー詳細"):
         st.code("\n".join(errors[:50]))
     st.stop()
 
-
 df["FX→JPY"] = df["通貨"].map(fx)
 df["円換算価格"] = df["現在値"] * df["FX→JPY"]
+data_health = _build_data_health(df, fx, errors)
 
+with st.expander("🧭 はじめて使う人へ / データ状態"):
+    st.markdown(
+        '<div class="atlas-guide-grid">'
+        '<div class="atlas-guide-card"><div class="atlas-guide-step">STEP 1</div><div class="atlas-guide-title">🏠 全体を見る</div><div class="atlas-guide-text">Pulse・Radar・業種ヒートマップで、50社全体の現在地を確認。</div></div>'
+        '<div class="atlas-guide-card"><div class="atlas-guide-step">STEP 2</div><div class="atlas-guide-title">🔎 深掘りする</div><div class="atlas-guide-text">個別分析で期間別騰落率・Score内訳・ニュースを確認。</div></div>'
+        '<div class="atlas-guide-card"><div class="atlas-guide-step">STEP 3</div><div class="atlas-guide-title">⚖️ 比較する</div><div class="atlas-guide-text">2〜4社を同じ基準で比較。AI比較は必要な時だけ実行。</div></div>'
+        '<div class="atlas-guide-card"><div class="atlas-guide-step">STEP 4</div><div class="atlas-guide-title">🔔 条件で探す</div><div class="atlas-guide-text">自分の観察条件を保存し、次回すぐ呼び出せます。</div></div>'
+        '</div>',
+        unsafe_allow_html=True,
+    )
+    missing_fx_text = "なし" if not data_health["missing_fx"] else " / ".join(data_health["missing_fx"])
+    st.markdown(
+        '<div class="data-health-grid">'
+        f'<div class="data-health-item"><div class="data-health-label">取得銘柄</div><div class="data-health-value">{data_health["loaded"]} / {data_health["expected"]}</div></div>'
+        f'<div class="data-health-item"><div class="data-health-label">最終価格日</div><div class="data-health-value">{html.escape(data_health["latest"])}</div></div>'
+        f'<div class="data-health-item"><div class="data-health-label">未取得FX</div><div class="data-health-value">{html.escape(missing_fx_text)}</div></div>'
+        f'<div class="data-health-item"><div class="data-health-label">取得エラー</div><div class="data-health-value">{len(data_health["errors"])}</div></div>'
+        '</div>',
+        unsafe_allow_html=True,
+    )
+    st.caption("データには遅延・取得失敗があり得ます。Atlas Scoreは価格トレンドを整理する観察指標で、売買推奨ではありません。")
+
+if st.session_state.atlas_setup_flash:
+    st.success(st.session_state.atlas_setup_flash)
+    st.session_state.atlas_setup_flash = None
+
+with st.expander("⬆️ Atlas設定を復元"):
+    st.caption("お気に入り・保有株・保存した検索条件を、以前保存したAtlas設定JSONから復元できます。")
+    atlas_setup_upload_global = st.file_uploader(
+        "Atlas設定JSONを読み込む",
+        type=["json"],
+        key="atlas_setup_upload_global",
+    )
+    if atlas_setup_upload_global is not None:
+        try:
+            setup_bytes = atlas_setup_upload_global.getvalue()
+            setup_digest = hashlib.sha256(setup_bytes).hexdigest()
+            if setup_digest != st.session_state.atlas_setup_digest:
+                setup_payload = json.loads(setup_bytes.decode("utf-8"))
+                _apply_atlas_setup_payload(setup_payload)
+                st.session_state.atlas_setup_digest = setup_digest
+                st.session_state.atlas_setup_flash = "Atlas設定を復元しました。お気に入り・保有株・保存条件を反映しています。"
+                st.rerun()
+        except Exception:
+            st.error("Atlas設定JSONを読み込めませんでした。")
 
 tabs = st.tabs(["🏠 ホーム", "🌍 世界50", "🔎 個別分析", "⚖️ 比較", "⭐ お気に入り", "💼 保有株", "💰 予算で探す", "🔔 条件で探す"])
 
@@ -2170,20 +2620,57 @@ with tabs[1]:
     st.markdown("## 🌍 世界50")
     st.caption("国・地域・業種・Atlas Scoreで、世界の注目銘柄を絞り込めます。")
 
+    search_text = st.text_input(
+        "会社名・Ticker検索",
+        placeholder="例：NVIDIA / NVDA / MUFG",
+        key="world_search",
+    ).strip()
+
     f1, f2, f3, f4 = st.columns(4)
     country = f1.selectbox("国", ["すべて"] + sorted(df["国"].unique().tolist()), key="country")
     region = f2.selectbox("地域", ["すべて"] + sorted(df["地域"].unique().tolist()), key="region")
     sector = f3.selectbox("業種", ["すべて"] + sorted(df["業種"].unique().tolist()), key="sector")
     minscore = f4.slider("最低Score", 0, 100, 0, key="score")
 
+    f5, f6 = st.columns(2)
+    judge_filter = f5.selectbox(
+        "判定",
+        ["すべて", "強い＋", "＋", "様子見", "－"],
+        key="world_judge",
+    )
+    world_sort = f6.selectbox(
+        "並び順",
+        ["Atlas Scoreが高い順", "1か月上昇率が高い順", "3か月上昇率が高い順", "円換算価格が安い順"],
+        key="world_sort",
+    )
+
     view = df.copy()
+    if search_text:
+        q = search_text.casefold()
+        search_mask = (
+            view["会社名"].astype(str).str.casefold().str.contains(q, regex=False)
+            | view["Ticker"].astype(str).str.casefold().str.contains(q, regex=False)
+        )
+        view = view[search_mask]
     if country != "すべて":
         view = view[view["国"] == country]
     if region != "すべて":
         view = view[view["地域"] == region]
     if sector != "すべて":
         view = view[view["業種"] == sector]
+    if judge_filter != "すべて":
+        view = view[view["判定"] == judge_filter]
     view = view[view["Atlas Score"] >= minscore]
+
+    world_sort_map = {
+        "Atlas Scoreが高い順": ("Atlas Score", False),
+        "1か月上昇率が高い順": ("1か月", False),
+        "3か月上昇率が高い順": ("3か月", False),
+        "円換算価格が安い順": ("円換算価格", True),
+    }
+    sort_col, sort_ascending = world_sort_map[world_sort]
+    view = view.sort_values(sort_col, ascending=sort_ascending, na_position="last").copy()
+    st.caption(f"表示：{len(view)} / {len(df)}社")
 
     show = view[
         [
@@ -2334,6 +2821,7 @@ with tabs[2]:
             st.session_state.favorites.remove(t)
         else:
             st.session_state.favorites.add(t)
+        st.session_state.favorites_editor_version += 1
         st.rerun()
 
     st.markdown("## 🔥 なぜ今注目？")
@@ -2360,42 +2848,77 @@ with tabs[2]:
         )
 
     st.markdown("## 📰 最新ニュース & AI解説")
-    st.caption("関連ニュースを最大3件表示し、初心者向けにAIが要点と影響を整理します。")
+    st.caption(
+        "関連ニュースを最大3件表示します。AI解説は必要な時だけボタンで生成するため、"
+        "通常表示ではAPIを消費しません。"
+    )
 
     if news_preview:
+        news_payload = [
+            {
+                "title": str(item.get("title", "")),
+                "summary": str(item.get("summary", ""))[:1500],
+                "publisher": str(item.get("publisher", "News")),
+            }
+            for item in news_preview[:3]
+        ]
+        news_ai_key = json.dumps(
+            {"company": selected, "news": news_payload},
+            ensure_ascii=False,
+            sort_keys=True,
+        )
+
+        if st.button(
+            "🤖 ニュース3件をAIで整理する",
+            key=f"news_ai_button_{t}",
+            use_container_width=True,
+        ):
+            with st.spinner(f"Atlas AIがニュースを整理中...（最大{int(AI_TIMEOUT_SECONDS)}秒）"):
+                st.session_state.news_ai_result = analyze_news_batch_with_ai(
+                    selected,
+                    json.dumps(news_payload, ensure_ascii=False, sort_keys=True),
+                )
+                st.session_state.news_ai_key = news_ai_key
+
+        active_news_ai = None
+        if st.session_state.news_ai_key == news_ai_key:
+            active_news_ai = st.session_state.news_ai_result
+
+        if active_news_ai and not active_news_ai.get("ok", False):
+            st.warning("AIニュース解説を取得できませんでした。元ニュースはそのまま確認できます。")
+
+        ai_items = active_news_ai.get("items", {}) if active_news_ai and active_news_ai.get("ok") else {}
+
         for i, item in enumerate(news_preview[:3], start=1):
             card = st.container(border=True)
             card.markdown(f"### 📰 注目ニュース {i}")
 
-            ai_news = analyze_news_with_ai(
-                selected,
-                item["title"],
-                item.get("summary", ""),
-            )
+            ai_news = ai_items.get(i - 1) if isinstance(ai_items, dict) else None
+            if ai_news:
+                title_display = ai_news.get("title_ja", item["title"])
+                summary_display = ai_news.get("summary", "AI解説を取得できませんでした。")
+                impact = ai_news.get("impact", "中立")
 
-            title_ja = ai_news.get("title_ja", item["title"])
-            summary_ja = ai_news.get("summary", "ニュースの解説を取得できませんでした。")
-            impact = ai_news.get("impact", "中立")
+                if impact == "追い風候補":
+                    impact_icon = "🟢"
+                elif impact == "リスク候補":
+                    impact_icon = "🔴"
+                else:
+                    impact_icon = "🟡"
 
-            if impact == "追い風候補":
-                impact_icon = "🟢"
-            elif impact == "リスク候補":
-                impact_icon = "🔴"
+                card.write(f"**🇯🇵 {title_display}**")
+                card.caption(f"情報元：{item['publisher']}")
+                card.info(f"💡 初心者向け解説\n\n{summary_display}")
+                card.write(f"📊 **ニュースの影響：{impact_icon} {impact}**")
+                card.caption(f"原文見出し：{item['title']}")
             else:
-                impact_icon = "🟡"
+                card.write(f"**{item['title']}**")
+                card.caption(f"情報元：{item['publisher']} ｜ AI解説は上のボタンで生成できます")
+                source_summary = str(item.get("summary", "") or "").strip()
+                if source_summary:
+                    card.write(source_summary[:500] + ("…" if len(source_summary) > 500 else ""))
 
-            card.write(f"**🇯🇵 {title_ja}**")
-            card.caption(f"情報元：{item['publisher']}")
-
-            card.info(
-                f"💡 初心者向け解説\n\n"
-                f"{summary_ja}"
-            )
-
-            card.write(f"📊 **ニュースの影響：{impact_icon} {impact}**")
-            card.caption(f"英語原文：{item['title']}")
-
-            if item["link"]:
+            if item.get("link"):
                 card.markdown(f"[🔗 元の記事を見る]({item['link']})")
     else:
         st.caption("この会社に関連するニュースを取得できませんでした。")
@@ -2633,7 +3156,7 @@ with tabs[3]:
             key="compare_ai_button",
             use_container_width=True,
         ):
-            with st.spinner("Atlas AIが比較データを整理中...（最大20秒）"):
+            with st.spinner(f"Atlas AIが比較データを整理中...（最大{int(AI_TIMEOUT_SECONDS)}秒）"):
                 st.session_state.comparison_ai_result = analyze_comparison_with_ai(
                     compare_payload_json
                 )
@@ -2702,11 +3225,34 @@ with tabs[4]:
     st.markdown("## ⭐ お気に入り")
     st.caption("気になる銘柄を保存して、値動きやAtlas Scoreをまとめて比較できます。")
 
+    with st.expander("✏️ お気に入りを編集"):
+        current_favorite_names = [
+            name for ticker, name, *_ in COMPANIES
+            if ticker in st.session_state.favorites
+        ]
+        edited_favorite_names = st.multiselect(
+            "お気に入り銘柄",
+            options=[row[1] for row in COMPANIES],
+            default=current_favorite_names,
+            key=f"favorites_editor_names_{st.session_state.favorites_editor_version}",
+        )
+        if st.button("⭐ お気に入りを更新", use_container_width=True, key="favorites_editor_apply"):
+            name_to_ticker = {row[1]: row[0] for row in COMPANIES}
+            st.session_state.favorites = {name_to_ticker[name] for name in edited_favorite_names}
+            st.session_state.favorites_editor_version += 1
+            st.rerun()
+
     favdf = df[df["Ticker"].isin(st.session_state.favorites)].copy()
 
     if favdf.empty:
         st.info("🔎 個別分析から気になる企業をお気に入りに追加すると、ここでまとめて比較できます。")
     else:
+        fm1, fm2, fm3 = st.columns(3)
+        fm1.metric("⭐ 登録数", f"{len(favdf)}社")
+        fm2.metric("🎯 平均Score", f"{favdf['Atlas Score'].mean():.1f}")
+        fav_1m_mean = favdf["1か月"].mean() * 100 if favdf["1か月"].notna().any() else float("nan")
+        fm3.metric("📈 平均1か月", "-" if pd.isna(fav_1m_mean) else f"{fav_1m_mean:+.2f}%")
+
         favorite_cards = []
         for _, fav_row in favdf.iterrows():
             price = (
@@ -2774,6 +3320,10 @@ with tabs[5]:
         "外国株の平均取得単価は現地通貨で入力し、現在の為替で円換算する概算です。CSVで保存・復元できます。"
     )
 
+    if st.session_state.portfolio_csv_flash:
+        st.success(st.session_state.portfolio_csv_flash)
+        st.session_state.portfolio_csv_flash = None
+
     edited = st.data_editor(
         st.session_state.portfolio,
         num_rows="dynamic",
@@ -2786,7 +3336,7 @@ with tabs[5]:
             "株数": st.column_config.NumberColumn(min_value=0.0, step=0.01),
             "平均取得単価": st.column_config.NumberColumn("平均取得単価（現地通貨）", min_value=0.0, step=0.01),
         },
-        key="portfolio_editor",
+        key=f"portfolio_editor_{st.session_state.portfolio_editor_version}",
     )
 
     st.session_state.portfolio = edited
@@ -2858,6 +3408,29 @@ with tabs[5]:
         p2.metric("📊 評価額", f"¥{total_current:,.0f}")
         p3.metric("📈 損益", f"¥{total_pnl:,.0f}", delta=f"{total_pnl_rate:+.2f}%")
 
+        if len(pf) >= 2:
+            st.markdown("### 🧩 評価額の構成")
+            allocation = (
+                pf.groupby("会社名", as_index=False)["評価額(円)"]
+                .sum()
+                .sort_values("評価額(円)", ascending=False)
+            )
+            allocation_chart = (
+                alt.Chart(allocation)
+                .mark_bar(cornerRadiusEnd=4)
+                .encode(
+                    y=alt.Y("会社名:N", sort="-x", title=None),
+                    x=alt.X("評価額(円):Q", title="評価額（円）"),
+                    tooltip=[
+                        alt.Tooltip("会社名:N", title="会社"),
+                        alt.Tooltip("評価額(円):Q", title="評価額", format=",.0f"),
+                    ],
+                )
+                .properties(height=max(160, min(360, len(allocation) * 34)))
+            )
+            st.altair_chart(allocation_chart, use_container_width=True)
+            st.caption("※ 現在の円換算評価額による構成です。資産配分の推奨を示すものではありません。")
+
         portfolio_cards = []
         for _, pf_row in pf.iterrows():
             pnl_rate_text = f"{float(pf_row['損益率']) * 100:+.2f}%"
@@ -2908,12 +3481,21 @@ with tabs[5]:
     upl = st.file_uploader("保存した保有株CSVを読み込む", type=["csv"], key="pfupload")
     if upl is not None:
         try:
-            loaded = pd.read_csv(upl)
-            required_cols = {"Ticker", "株数", "平均取得単価"}
-            if not required_cols.issubset(loaded.columns):
-                raise ValueError("必要列不足")
-            st.session_state.portfolio = loaded[["Ticker", "株数", "平均取得単価"]].copy()
-            st.success("読み込みました。")
+            csv_bytes = upl.getvalue()
+            csv_digest = hashlib.sha256(csv_bytes).hexdigest()
+            if csv_digest != st.session_state.portfolio_csv_digest:
+                loaded = pd.read_csv(io.BytesIO(csv_bytes))
+                required_cols = {"Ticker", "株数", "平均取得単価"}
+                if not required_cols.issubset(loaded.columns):
+                    raise ValueError("必要列不足")
+                valid_tickers = {row[0] for row in COMPANIES}
+                loaded = loaded[["Ticker", "株数", "平均取得単価"]].copy()
+                loaded = loaded[loaded["Ticker"].astype(str).isin(valid_tickers)].reset_index(drop=True)
+                st.session_state.portfolio = loaded
+                st.session_state.portfolio_csv_digest = csv_digest
+                st.session_state.portfolio_editor_version += 1
+                st.session_state.portfolio_csv_flash = "保有株CSVを読み込みました。"
+                st.rerun()
         except Exception:
             st.error("CSVを読み込めませんでした。")
 
@@ -2992,24 +3574,43 @@ with tabs[7]:
         "買い・売りの推奨ではありません。"
     )
 
+    if st.session_state.watch_filter_flash:
+        st.success(st.session_state.watch_filter_flash)
+        st.session_state.watch_filter_flash = None
+
+    st.markdown("### 💾 保存済み条件")
+    st.caption("保存した観察条件をワンタップで呼び出せます。アプリ全体の設定は画面下部からJSON保存できます。")
+
+    saved_names = sorted(st.session_state.saved_watch_filters.keys())
+    if saved_names:
+        saved_select_col, saved_apply_col, saved_delete_col = st.columns([3, 1, 1])
+        selected_saved_filter = saved_select_col.selectbox(
+            "保存済み条件",
+            saved_names,
+            key="saved_watch_filter_select",
+            label_visibility="collapsed",
+        )
+        if saved_apply_col.button("▶️ 呼び出す", use_container_width=True, key="saved_watch_filter_apply"):
+            _apply_watch_config(st.session_state.saved_watch_filters[selected_saved_filter])
+            st.rerun()
+        if saved_delete_col.button("🗑️ 削除", use_container_width=True, key="saved_watch_filter_delete"):
+            st.session_state.saved_watch_filters.pop(selected_saved_filter, None)
+            st.rerun()
+
+        selected_config = st.session_state.saved_watch_filters.get(selected_saved_filter, {})
+        st.markdown(
+            '<div class="saved-filter-card">'
+            f'<div class="saved-filter-name">{html.escape(str(selected_saved_filter))}</div>'
+            f'<div class="saved-filter-summary">{html.escape(_watch_config_summary(selected_config))}</div>'
+            '</div>',
+            unsafe_allow_html=True,
+        )
+    else:
+        st.caption("保存済み条件はまだありません。下で条件を作って保存できます。")
+
+    st.divider()
     st.markdown("### ⚡ 条件プリセット")
     st.caption("よく使う観察条件をワンクリックでセットできます。数値は下で自由に変更できます。")
-
-    watch_defaults = {
-        "watch_score": 0.0,
-        "watch_1m": -100.0,
-        "watch_3m": -100.0,
-        "watch_volume": 0.0,
-        "watch_sma20": False,
-        "watch_sma60": False,
-        "watch_region": "すべて",
-        "watch_sector_group": "すべて",
-        "watch_sort": "Atlas Scoreが高い順",
-        "watch_limit": 12,
-    }
-    for watch_key, watch_default in watch_defaults.items():
-        if watch_key not in st.session_state:
-            st.session_state[watch_key] = watch_default
 
     preset1, preset2, preset3, preset4 = st.columns(4)
 
@@ -3116,7 +3717,7 @@ with tabs[7]:
 
     sort_label = st.selectbox(
         "並び順",
-        ["Atlas Scoreが高い順", "1か月上昇率が高い順", "3か月上昇率が高い順", "出来高倍率が高い順"],
+        WATCH_SORT_OPTIONS,
         key="watch_sort",
     )
 
@@ -3126,6 +3727,21 @@ with tabs[7]:
         key="watch_limit",
         help="条件一致が多いときに、画面へ表示するカード数を切り替えます。",
     )
+
+    save_name_col, save_button_col = st.columns([3, 1])
+    watch_save_name = save_name_col.text_input(
+        "現在の条件に名前を付ける",
+        placeholder="例：出来高＋上向き",
+        key="watch_save_name",
+    ).strip()
+    if save_button_col.button("💾 条件を保存", use_container_width=True, key="watch_save_button"):
+        if not watch_save_name:
+            st.warning("保存名を入力してください。")
+        else:
+            saved_name = watch_save_name[:40]
+            st.session_state.saved_watch_filters[saved_name] = _watch_config_from_state()
+            st.session_state.watch_filter_flash = f"『{saved_name}』を保存しました。"
+            st.rerun()
 
     watch_df = df.copy()
     watch_df["業種グループ"] = watch_df["業種"].map(SECTOR_GROUPS).fillna(watch_df["業種"])
@@ -3247,6 +3863,21 @@ with tabs[7]:
 
 
 # ------------------------------
+# Atlas設定の保存
+# ------------------------------
+with st.expander("💾 Atlas設定を保存"):
+    st.caption("お気に入り・保有株・保存した検索条件・現在の検索条件を1つのJSONにまとめて保存します。")
+    st.download_button(
+        "⬇️ Atlas設定JSONを保存",
+        data=_settings_json_bytes(),
+        file_name="atlas50_settings.json",
+        mime="application/json",
+        use_container_width=True,
+        key="atlas_setup_download_global",
+    )
+    st.caption("保有株だけを管理したい場合は、保有株タブのCSV保存/読込も利用できます。")
+
+# ------------------------------
 # エラー・注意書き
 # ------------------------------
 if errors:
@@ -3255,7 +3886,8 @@ if errors:
 
 st.divider()
 st.caption(
+    f"ATLAS 50 V{APP_VERSION} {APP_LABEL} ｜ "
     "Atlas Scoreは価格トレンドを整理するための学習・監視指標です。"
     "買い推奨・売り推奨・将来の利益保証ではありません。"
-    "為替・株価・ニュースには遅延や取得失敗があり得ます。"
+    "為替・株価・ニュースには遅延や取得失敗があり得ます。AI解説も必ず元データと合わせて確認してください。"
 )
