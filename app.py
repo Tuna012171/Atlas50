@@ -404,6 +404,188 @@ HTML要素だけを隠す方式より、不要な空白が残りにくい。
     line-height: 1.45;
 }
 
+
+.sector-heatmap-desktop {
+    display: grid;
+    grid-template-columns: minmax(180px, 1.25fr) repeat(4, minmax(110px, 1fr));
+    gap: 7px;
+    margin-top: 14px;
+    margin-bottom: 8px;
+}
+
+.sector-heatmap-header {
+    padding: 8px 10px;
+    font-size: 0.76rem;
+    font-weight: 750;
+    opacity: 0.66;
+}
+
+.sector-heatmap-sector {
+    border: 1px solid rgba(120, 120, 120, 0.18);
+    border-radius: 11px;
+    padding: 10px 11px;
+    min-width: 0;
+}
+
+.sector-heatmap-sector-name {
+    font-size: 0.90rem;
+    font-weight: 800;
+    overflow-wrap: anywhere;
+}
+
+.sector-heatmap-sector-meta {
+    margin-top: 3px;
+    font-size: 0.72rem;
+    opacity: 0.62;
+    line-height: 1.4;
+}
+
+.sector-heatmap-cell {
+    border: 1px solid rgba(120, 120, 120, 0.16);
+    border-radius: 11px;
+    min-height: 58px;
+    padding: 9px 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+}
+
+.sector-heatmap-cell-value {
+    font-size: 0.94rem;
+    font-weight: 800;
+}
+
+.sector-heatmap-mobile {
+    display: none;
+}
+
+.sector-heatmap-mobile-card {
+    border: 1px solid rgba(120, 120, 120, 0.20);
+    border-radius: 14px;
+    padding: 13px;
+    margin-bottom: 10px;
+}
+
+.sector-heatmap-mobile-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 10px;
+}
+
+.sector-heatmap-mobile-name {
+    font-size: 1rem;
+    font-weight: 800;
+    overflow-wrap: anywhere;
+}
+
+.sector-heatmap-mobile-meta {
+    font-size: 0.74rem;
+    opacity: 0.62;
+    white-space: nowrap;
+}
+
+.sector-heatmap-mobile-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+    margin-top: 10px;
+}
+
+.sector-heatmap-mobile-tile {
+    border: 1px solid rgba(120, 120, 120, 0.16);
+    border-radius: 10px;
+    padding: 9px 10px;
+    min-width: 0;
+}
+
+.sector-heatmap-mobile-label {
+    font-size: 0.71rem;
+    opacity: 0.64;
+}
+
+.sector-heatmap-mobile-value {
+    margin-top: 2px;
+    font-size: 0.92rem;
+    font-weight: 800;
+}
+
+.home-top10-mobile {
+    display: none;
+}
+
+.home-top10-card {
+    border: 1px solid rgba(120, 120, 120, 0.20);
+    border-radius: 14px;
+    padding: 13px 14px;
+    margin-bottom: 10px;
+}
+
+.home-top10-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 10px;
+}
+
+.home-top10-rank {
+    font-size: 0.76rem;
+    opacity: 0.62;
+}
+
+.home-top10-company {
+    margin-top: 2px;
+    font-size: 1.04rem;
+    font-weight: 800;
+    overflow-wrap: anywhere;
+}
+
+.home-top10-country {
+    margin-top: 2px;
+    font-size: 0.78rem;
+    opacity: 0.66;
+}
+
+.home-top10-score {
+    font-size: 0.94rem;
+    font-weight: 800;
+    white-space: nowrap;
+}
+
+.home-top10-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+    margin-top: 11px;
+}
+
+.home-top10-item {
+    padding: 8px 9px;
+    border-radius: 10px;
+    background: rgba(120, 120, 120, 0.06);
+}
+
+.home-top10-label {
+    font-size: 0.70rem;
+    opacity: 0.62;
+}
+
+.home-top10-value {
+    margin-top: 1px;
+    font-size: 0.90rem;
+    font-weight: 700;
+}
+
+.home-top10-judge {
+    display: inline-block;
+    margin-top: 10px;
+    padding: 3px 8px;
+    border-radius: 999px;
+    border: 1px solid rgba(120, 120, 120, 0.25);
+    font-size: 0.80rem;
+}
+
 .atlas-radar-grid {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -468,6 +650,22 @@ HTML要素だけを隠す方式より、不要な空白が残りにくい。
     .atlas-radar-grid,
     .sector-spotlight-grid {
         grid-template-columns: 1fr;
+    }
+
+    .sector-heatmap-desktop {
+        display: none;
+    }
+
+    .sector-heatmap-mobile {
+        display: block;
+    }
+
+    .st-key-home_top10_table {
+        display: none !important;
+    }
+
+    .home-top10-mobile {
+        display: block;
     }
 
     .mobile-list-wrap {
@@ -1036,6 +1234,100 @@ def _build_sector_heatmap(full_df):
             )
 
     return summary, pd.DataFrame(heat_rows)
+
+
+def _sector_heat_cell_style(heat_value):
+    """ヒート値(-1〜1)を、明暗どちらのテーマでも読める淡い背景色へ変換する。"""
+    try:
+        heat = max(-1.0, min(1.0, float(heat_value)))
+    except (TypeError, ValueError):
+        heat = 0.0
+
+    strength = abs(heat)
+    if heat > 0.04:
+        alpha = 0.08 + (0.26 * strength)
+        border_alpha = min(0.44, alpha + 0.10)
+        return (
+            f"background: rgba(16, 185, 129, {alpha:.3f});"
+            f"border-color: rgba(16, 185, 129, {border_alpha:.3f});"
+        )
+    if heat < -0.04:
+        alpha = 0.08 + (0.26 * strength)
+        border_alpha = min(0.44, alpha + 0.10)
+        return (
+            f"background: rgba(239, 68, 68, {alpha:.3f});"
+            f"border-color: rgba(239, 68, 68, {border_alpha:.3f});"
+        )
+
+    return "background: rgba(120, 120, 120, 0.07);"
+
+
+def _render_sector_heatmap_html(summary, heat_frame):
+    """Altairに依存せず、PC/スマホ両方で確実に表示できるHTMLヒートマップを返す。"""
+    if summary.empty or heat_frame.empty:
+        return ""
+
+    metric_order = ["1か月", "3か月", "6か月", "Atlas Score"]
+    heat_lookup = {}
+    for _, heat_row in heat_frame.iterrows():
+        heat_lookup[(str(heat_row["業種グループ"]), str(heat_row["指標"]))] = heat_row
+
+    desktop_parts = ['<div class="sector-heatmap-desktop">']
+    desktop_parts.append('<div class="sector-heatmap-header">業種グループ</div>')
+    for metric in metric_order:
+        desktop_parts.append(f'<div class="sector-heatmap-header">{html.escape(metric)}</div>')
+
+    mobile_parts = ['<div class="sector-heatmap-mobile">']
+
+    for _, summary_row in summary.iterrows():
+        sector_name = str(summary_row["業種グループ"])
+        sector_escaped = html.escape(sector_name)
+        count = int(summary_row["銘柄数"])
+        breadth = float(summary_row["1か月プラス率"])
+
+        desktop_parts.append(
+            '<div class="sector-heatmap-sector">'
+            f'<div class="sector-heatmap-sector-name">{sector_escaped}</div>'
+            f'<div class="sector-heatmap-sector-meta">{count}銘柄 ｜ 1か月プラス {breadth:.0f}%</div>'
+            '</div>'
+        )
+
+        mobile_parts.append(
+            '<div class="sector-heatmap-mobile-card">'
+            '<div class="sector-heatmap-mobile-head">'
+            f'<div class="sector-heatmap-mobile-name">{sector_escaped}</div>'
+            f'<div class="sector-heatmap-mobile-meta">{count}銘柄</div>'
+            '</div>'
+            f'<div class="sector-heatmap-sector-meta">1か月プラス {breadth:.0f}%</div>'
+            '<div class="sector-heatmap-mobile-grid">'
+        )
+
+        for metric in metric_order:
+            row = heat_lookup.get((sector_name, metric))
+            if row is None:
+                display = "-"
+                style = _sector_heat_cell_style(0)
+            else:
+                display = html.escape(str(row["表示"]))
+                style = _sector_heat_cell_style(row["熱度"])
+
+            desktop_parts.append(
+                f'<div class="sector-heatmap-cell" style="{style}">'
+                f'<div class="sector-heatmap-cell-value">{display}</div>'
+                '</div>'
+            )
+            mobile_parts.append(
+                f'<div class="sector-heatmap-mobile-tile" style="{style}">'
+                f'<div class="sector-heatmap-mobile-label">{html.escape(metric)}</div>'
+                f'<div class="sector-heatmap-mobile-value">{display}</div>'
+                '</div>'
+            )
+
+        mobile_parts.append('</div></div>')
+
+    desktop_parts.append('</div>')
+    mobile_parts.append('</div>')
+    return "".join(desktop_parts + mobile_parts)
 
 
 def score_parts(cur, r1w, r1m, r3m, sma5, sma20, sma60, rsi, vr, dist_high):
@@ -1751,50 +2043,16 @@ with tabs[0]:
         st.markdown(sector_spotlight_html, unsafe_allow_html=True)
 
         sector_order = sector_summary["業種グループ"].tolist()
-        metric_order = ["1か月", "3か月", "6か月", "Atlas Score"]
 
-        heat_base = alt.Chart(sector_heat).encode(
-            x=alt.X(
-                "指標:N",
-                sort=metric_order,
-                title=None,
-                axis=alt.Axis(labelAngle=0, labelFontSize=12),
-            ),
-            y=alt.Y(
-                "業種グループ:N",
-                sort=sector_order,
-                title=None,
-                axis=alt.Axis(labelLimit=150, labelFontSize=12),
-            ),
-            tooltip=[
-                alt.Tooltip("業種グループ:N", title="業種グループ"),
-                alt.Tooltip("指標:N", title="指標"),
-                alt.Tooltip("表示:N", title="値"),
-                alt.Tooltip("銘柄数:Q", title="銘柄数", format=".0f"),
-                alt.Tooltip("1か月プラス率:Q", title="1か月プラス率", format=".0f"),
-            ],
-        )
-
-        heat_rect = heat_base.mark_rect(cornerRadius=4).encode(
-            color=alt.Color(
-                "熱度:Q",
-                scale=alt.Scale(domain=[-1, 0, 1], scheme="redyellowgreen"),
-                legend=None,
-            )
-        )
-        heat_text = heat_base.mark_text(fontSize=12, fontWeight="bold").encode(
-            text=alt.Text("表示:N"),
-            color=alt.Color("文字色:N", scale=None, legend=None),
-        )
-
-        sector_chart = (heat_rect + heat_text).properties(
-            height=max(330, len(sector_order) * 39)
-        ).configure_view(strokeWidth=0)
-        st.altair_chart(sector_chart, use_container_width=True)
+        # Altairの描画差に依存しないHTMLヒートマップ。
+        # PCは一覧型、スマホは業種ごとの2×2カードに自動切り替え。
+        sector_heatmap_html = _render_sector_heatmap_html(sector_summary, sector_heat)
+        if sector_heatmap_html:
+            st.markdown(sector_heatmap_html, unsafe_allow_html=True)
 
         st.caption(
-            "色の基準：騰落率は0%を中立、Atlas Scoreは50を中立として表示しています。"
-            "同じ色でも指標ごとに尺度が異なるため、セル内の数値を優先して確認してください。"
+            "色の基準：赤系は相対的に弱め、中央付近は中立、緑系は相対的に強めです。"
+            "騰落率は0%を中立、Atlas Scoreは50を中立としており、セル内の実数を優先して確認してください。"
         )
 
         with st.expander("🗂️ 業種グループの内訳を見る"):
@@ -1829,7 +2087,8 @@ with tabs[0]:
     for col in ["1か月", "3か月", "6か月", "1年"]:
         top[col] = (top[col] * 100).round(2)
 
-    st.dataframe(
+    home_top10_table = st.container(key="home_top10_table")
+    home_top10_table.dataframe(
         top,
         use_container_width=True,
         hide_index=True,
@@ -1840,6 +2099,33 @@ with tabs[0]:
             "1年": st.column_config.NumberColumn(format="%.2f%%"),
             "Atlas Score": st.column_config.ProgressColumn(min_value=0, max_value=100, format="%.1f"),
         },
+    )
+
+    home_top10_cards = []
+    for _, top_row in top.iterrows():
+        home_top10_cards.append(
+            '<div class="home-top10-card">'
+            '<div class="home-top10-head">'
+            '<div>'
+            f'<div class="home-top10-rank">#{int(top_row["順位"])}</div>'
+            f'<div class="home-top10-company">{html.escape(str(top_row["会社名"]))}</div>'
+            f'<div class="home-top10-country">{html.escape(str(top_row["国"]))}</div>'
+            '</div>'
+            f'<div class="home-top10-score">Score {float(top_row["Atlas Score"]):.1f}</div>'
+            '</div>'
+            '<div class="home-top10-grid">'
+            f'<div class="home-top10-item"><div class="home-top10-label">1か月</div><div class="home-top10-value">{_pct_number_text(top_row["1か月"])}</div></div>'
+            f'<div class="home-top10-item"><div class="home-top10-label">3か月</div><div class="home-top10-value">{_pct_number_text(top_row["3か月"])}</div></div>'
+            f'<div class="home-top10-item"><div class="home-top10-label">6か月</div><div class="home-top10-value">{_pct_number_text(top_row["6か月"])}</div></div>'
+            f'<div class="home-top10-item"><div class="home-top10-label">1年</div><div class="home-top10-value">{_pct_number_text(top_row["1年"])}</div></div>'
+            '</div>'
+            f'<div class="home-top10-judge">{html.escape(str(top_row["判定"]))}</div>'
+            '</div>'
+        )
+
+    st.markdown(
+        '<div class="home-top10-mobile">' + "".join(home_top10_cards) + '</div>',
+        unsafe_allow_html=True,
     )
     st.caption("※ 同じScore表示でも、順位は内部のより細かい値によって決まる場合があります。")
 
