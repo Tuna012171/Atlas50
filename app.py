@@ -2341,7 +2341,8 @@ with tabs[0]:
     b.metric("🔥 強い＋", int((df["判定"] == "強い＋").sum()))
     c.metric("📈 ＋", int((df["判定"] == "＋").sum()))
     d.metric("🎯 平均Score", f'{df["Atlas Score"].mean():.1f}')
- 　　e.metric("📅 最新株価日", str(df["最終日"].max()))
+    e.metric("🕒 最終更新", str(df["最終日"].max()))
+
     pulse = _build_atlas_pulse(df)
     st.markdown("### 📡 Atlas Pulse")
     st.caption("50社全体を見て、値動きの広がりと現在の状態を確認します。将来予測ではなく、現在データのスナップショットです。")
