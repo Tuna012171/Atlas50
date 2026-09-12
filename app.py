@@ -157,6 +157,19 @@ HTML要素だけを隠す方式より、不要な空白が残りにくい。
     display: none !important;
 }
 
+
+.atlas-card-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 10px;
+    align-items: stretch;
+}
+
+.atlas-card-grid .mobile-detail-card {
+    margin-bottom: 0;
+    height: 100%;
+}
+
 .mobile-detail-card {
     border: 1px solid rgba(120, 120, 120, 0.20);
     border-radius: 14px;
@@ -2023,45 +2036,12 @@ with tabs[3]:
 with tabs[4]:
     st.markdown("## ⭐ お気に入り")
     st.caption("気になる銘柄を保存して、値動きやAtlas Scoreをまとめて比較できます。")
-    
+
     favdf = df[df["Ticker"].isin(st.session_state.favorites)].copy()
 
     if favdf.empty:
         st.info("🔎 個別分析から気になる企業をお気に入りに追加すると、ここでまとめて比較できます。")
     else:
-        favshow = favdf[
-            [
-                "順位",
-                "会社名",
-                "国",
-                "円換算価格",
-                "1か月",
-                "3か月",
-                "6か月",
-                "1年",
-                "Atlas Score",
-                "判定",
-            ]
-        ].copy()
-
-        for col in ["1か月", "3か月", "6か月", "1年"]:
-            favshow[col] = (favshow[col] * 100).round(2)
-
-        favorite_table = st.container(key="favorite_table")
-        favorite_table.dataframe(
-            favshow,
-            use_container_width=True,
-            hide_index=True,
-            column_config={
-                "円換算価格": st.column_config.NumberColumn(format="¥%.0f"),
-                "1か月": st.column_config.NumberColumn(format="%.2f%%"),
-                "3か月": st.column_config.NumberColumn(format="%.2f%%"),
-                "6か月": st.column_config.NumberColumn(format="%.2f%%"),
-                "1年": st.column_config.NumberColumn(format="%.2f%%"),
-                "Atlas Score": st.column_config.ProgressColumn(min_value=0, max_value=100, format="%.1f"),
-            },
-        )
-
         favorite_cards = []
         for _, fav_row in favdf.iterrows():
             price = (
@@ -2089,8 +2069,34 @@ with tabs[4]:
                 '</div>'
             )
 
-        favorite_mobile = st.container(key="favorite_mobile")
-        favorite_mobile.markdown("".join(favorite_cards), unsafe_allow_html=True)
+        st.markdown(
+            '<div class="atlas-card-grid">' + "".join(favorite_cards) + '</div>',
+            unsafe_allow_html=True,
+        )
+
+        with st.expander("📋 表で比較する"):
+            favshow = favdf[
+                [
+                    "順位", "会社名", "国", "円換算価格",
+                    "1か月", "3か月", "6か月", "1年",
+                    "Atlas Score", "判定",
+                ]
+            ].copy()
+            for col in ["1か月", "3か月", "6か月", "1年"]:
+                favshow[col] = (favshow[col] * 100).round(2)
+            st.dataframe(
+                favshow,
+                use_container_width=True,
+                hide_index=True,
+                column_config={
+                    "円換算価格": st.column_config.NumberColumn(format="¥%.0f"),
+                    "1か月": st.column_config.NumberColumn(format="%.2f%%"),
+                    "3か月": st.column_config.NumberColumn(format="%.2f%%"),
+                    "6か月": st.column_config.NumberColumn(format="%.2f%%"),
+                    "1年": st.column_config.NumberColumn(format="%.2f%%"),
+                    "Atlas Score": st.column_config.ProgressColumn(min_value=0, max_value=100, format="%.1f"),
+                },
+            )
 
 
 # ------------------------------
@@ -2129,21 +2135,14 @@ with tabs[5]:
             continue
 
         rr = rr.iloc[0]
-
-        qty_raw = p.get("株数")
-        avg_raw = p.get("平均取得単価")
-
-        # data_editorでは未入力値が None / NaN / 空文字などになることがある。
-        # 数値へ安全に変換でき、かつ両方が正の値のときだけ計算する。
-        qty = pd.to_numeric(pd.Series([qty_raw]), errors="coerce").iloc[0]
-        avg = pd.to_numeric(pd.Series([avg_raw]), errors="coerce").iloc[0]
+        qty = pd.to_numeric(pd.Series([p.get("株数")]), errors="coerce").iloc[0]
+        avg = pd.to_numeric(pd.Series([p.get("平均取得単価")]), errors="coerce").iloc[0]
 
         if pd.isna(qty) or pd.isna(avg):
             continue
 
         qty = float(qty)
         avg = float(avg)
-
         if qty <= 0 or avg <= 0:
             continue
 
@@ -2163,19 +2162,10 @@ with tabs[5]:
         current = qty * float(rr["円換算価格"])
         pnl = current - invested
 
-        calc.append(
-            [
-                p["Ticker"],
-                rr["会社名"],
-                qty,
-                invested,
-                current,
-                pnl,
-                (pnl / invested if invested else 0),
-                rr["Atlas Score"],
-                rr["判定"],
-            ]
-        )
+        calc.append([
+            p["Ticker"], rr["会社名"], qty, invested, current, pnl,
+            (pnl / invested if invested else 0), rr["Atlas Score"], rr["判定"],
+        ])
 
     if skipped_portfolio:
         st.warning(
@@ -2187,62 +2177,21 @@ with tabs[5]:
         pf = pd.DataFrame(
             calc,
             columns=[
-                "Ticker",
-                "会社名",
-                "株数",
-                "投資額(円)",
-                "評価額(円)",
-                "損益(円)",
-                "損益率",
-                "Score",
-                "判定",
+                "Ticker", "会社名", "株数", "投資額(円)", "評価額(円)",
+                "損益(円)", "損益率", "Score", "判定",
             ],
         )
 
         st.markdown("### 📌 保有状況サマリー")
-
         total_invested = pf["投資額(円)"].sum()
         total_current = pf["評価額(円)"].sum()
         total_pnl = pf["損益(円)"].sum()
-        total_pnl_rate = (
-            total_pnl / total_invested * 100
-            if total_invested
-            else 0
-        )
+        total_pnl_rate = total_pnl / total_invested * 100 if total_invested else 0
 
         p1, p2, p3 = st.columns(3)
-
-        p1.metric(
-            "💴 投資額",
-            f"¥{total_invested:,.0f}"
-        )
-
-        p2.metric(
-            "📊 評価額",
-            f"¥{total_current:,.0f}"
-        )
-
-        p3.metric(
-            "📈 損益",
-            f"¥{total_pnl:,.0f}",
-            delta=f"{total_pnl_rate:+.2f}%"
-        )
-
-        pf_display = pf.copy()
-        pf_display["損益率"] = (pf_display["損益率"] * 100).round(2)
-
-        portfolio_table = st.container(key="portfolio_table")
-        portfolio_table.dataframe(
-            pf_display,
-            use_container_width=True,
-            hide_index=True,
-            column_config={
-                "投資額(円)": st.column_config.NumberColumn(format="¥%.0f"),
-                "評価額(円)": st.column_config.NumberColumn(format="¥%.0f"),
-                "損益(円)": st.column_config.NumberColumn(format="¥%.0f"),
-                "損益率": st.column_config.NumberColumn(format="%.2f%%"),
-            },
-        )
+        p1.metric("💴 投資額", f"¥{total_invested:,.0f}")
+        p2.metric("📊 評価額", f"¥{total_current:,.0f}")
+        p3.metric("📈 損益", f"¥{total_pnl:,.0f}", delta=f"{total_pnl_rate:+.2f}%")
 
         portfolio_cards = []
         for _, pf_row in pf.iterrows():
@@ -2266,9 +2215,25 @@ with tabs[5]:
                 '</div>'
             )
 
-        portfolio_mobile = st.container(key="portfolio_mobile")
-        portfolio_mobile.markdown("".join(portfolio_cards), unsafe_allow_html=True)
+        st.markdown(
+            '<div class="atlas-card-grid">' + "".join(portfolio_cards) + '</div>',
+            unsafe_allow_html=True,
+        )
 
+        with st.expander("📋 詳細を表で見る"):
+            pf_display = pf.copy()
+            pf_display["損益率"] = (pf_display["損益率"] * 100).round(2)
+            st.dataframe(
+                pf_display,
+                use_container_width=True,
+                hide_index=True,
+                column_config={
+                    "投資額(円)": st.column_config.NumberColumn(format="¥%.0f"),
+                    "評価額(円)": st.column_config.NumberColumn(format="¥%.0f"),
+                    "損益(円)": st.column_config.NumberColumn(format="¥%.0f"),
+                    "損益率": st.column_config.NumberColumn(format="%.2f%%"),
+                },
+            )
     elif not edited.dropna(subset=["Ticker"]).empty:
         st.caption("株数と平均取得単価を入力すると、保有状況サマリーと損益が表示されます。")
 
@@ -2311,28 +2276,6 @@ with tabs[6]:
         )
         buyable = buyable.sort_values(["Atlas Score", "円換算価格"], ascending=[False, True])
 
-        budget_table = st.container(key="budget_table")
-        budget_table.dataframe(
-            buyable[
-                [
-                    "順位",
-                    "会社名",
-                    "国",
-                    "業種",
-                    "円換算価格",
-                    "予算で買える株数",
-                    "Atlas Score",
-                    "判定",
-                ]
-            ],
-            use_container_width=True,
-            hide_index=True,
-            column_config={
-                "円換算価格": st.column_config.NumberColumn(format="¥%.0f"),
-                "Atlas Score": st.column_config.ProgressColumn(min_value=0, max_value=100, format="%.1f"),
-            },
-        )
-
         budget_cards = []
         for _, budget_row in buyable.iterrows():
             budget_cards.append(
@@ -2352,8 +2295,24 @@ with tabs[6]:
                 '</div>'
             )
 
-        budget_mobile = st.container(key="budget_mobile")
-        budget_mobile.markdown("".join(budget_cards), unsafe_allow_html=True)
+        st.markdown(
+            '<div class="atlas-card-grid">' + "".join(budget_cards) + '</div>',
+            unsafe_allow_html=True,
+        )
+
+        with st.expander("📋 一覧を表で見る"):
+            st.dataframe(
+                buyable[[
+                    "順位", "会社名", "国", "業種", "円換算価格",
+                    "予算で買える株数", "Atlas Score", "判定",
+                ]],
+                use_container_width=True,
+                hide_index=True,
+                column_config={
+                    "円換算価格": st.column_config.NumberColumn(format="¥%.0f"),
+                    "Atlas Score": st.column_config.ProgressColumn(min_value=0, max_value=100, format="%.1f"),
+                },
+            )
     else:
         st.info("現在の予算内で1株買える企業はありません。")
 
