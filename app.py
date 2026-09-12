@@ -154,6 +154,82 @@ HTML要素だけを隠す方式より、不要な空白が残りにくい。
     display: none;
 }
 
+.st-key-home_top10_mobile {
+    display: none;
+}
+
+.home-top10-card {
+    border: 1px solid rgba(120, 120, 120, 0.20);
+    border-radius: 14px;
+    padding: 14px;
+    margin-bottom: 10px;
+}
+
+.home-top10-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 10px;
+}
+
+.home-top10-rank {
+    font-size: 0.78rem;
+    font-weight: 700;
+    opacity: 0.68;
+}
+
+.home-top10-company {
+    font-size: 1.08rem;
+    font-weight: 760;
+    margin-top: 2px;
+}
+
+.home-top10-meta {
+    font-size: 0.82rem;
+    opacity: 0.68;
+    margin-top: 2px;
+}
+
+.home-top10-score {
+    text-align: right;
+    font-size: 0.96rem;
+    font-weight: 760;
+    white-space: nowrap;
+}
+
+.home-top10-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+    margin-top: 12px;
+}
+
+.home-top10-stat {
+    padding: 8px 9px;
+    border-radius: 10px;
+    background: rgba(120, 120, 120, 0.06);
+}
+
+.home-top10-stat-label {
+    font-size: 0.72rem;
+    opacity: 0.62;
+}
+
+.home-top10-stat-value {
+    font-size: 0.90rem;
+    font-weight: 680;
+    margin-top: 1px;
+}
+
+.home-top10-judge {
+    display: inline-block;
+    margin-top: 10px;
+    padding: 3px 8px;
+    border-radius: 999px;
+    border: 1px solid rgba(120, 120, 120, 0.25);
+    font-size: 0.8rem;
+}
+
 .pulse-region-card {
     border: 1px solid rgba(120, 120, 120, 0.20);
     border-radius: 14px;
@@ -262,12 +338,14 @@ HTML要素だけを隠す方式より、不要な空白が残りにくい。
 
     .st-key-world50_table,
     .st-key-compare_table,
-    .st-key-pulse_region_table {
+    .st-key-pulse_region_table,
+    .st-key-home_top10_table {
         display: none;
     }
 
     .st-key-compare_mobile,
-    .st-key-pulse_region_mobile {
+    .st-key-pulse_region_mobile,
+    .st-key-home_top10_mobile {
         display: block;
     }
 
@@ -1363,7 +1441,8 @@ with tabs[0]:
     for col in ["1か月", "3か月", "6か月", "1年"]:
         top[col] = (top[col] * 100).round(2)
 
-    st.dataframe(
+    top10_table = st.container(key="home_top10_table")
+    top10_table.dataframe(
         top,
         use_container_width=True,
         hide_index=True,
@@ -1375,6 +1454,43 @@ with tabs[0]:
             "Atlas Score": st.column_config.ProgressColumn(min_value=0, max_value=100, format="%.1f"),
         },
     )
+
+    top10_mobile = st.container(key="home_top10_mobile")
+    top10_cards = []
+    for _, top_row in top.iterrows():
+        top10_cards.append(
+            '<div class="home-top10-card">'
+            '<div class="home-top10-head">'
+            '<div>'
+            f'<div class="home-top10-rank">#{int(top_row["順位"])}</div>'
+            f'<div class="home-top10-company">{html.escape(str(top_row["会社名"]))}</div>'
+            f'<div class="home-top10-meta">{html.escape(str(top_row["国"]))}</div>'
+            '</div>'
+            f'<div class="home-top10-score">Atlas Score<br>{float(top_row["Atlas Score"]):.1f}</div>'
+            '</div>'
+            '<div class="home-top10-grid">'
+            '<div class="home-top10-stat">'
+            '<div class="home-top10-stat-label">1か月</div>'
+            f'<div class="home-top10-stat-value">{_pct_number_text(top_row["1か月"])}</div>'
+            '</div>'
+            '<div class="home-top10-stat">'
+            '<div class="home-top10-stat-label">3か月</div>'
+            f'<div class="home-top10-stat-value">{_pct_number_text(top_row["3か月"])}</div>'
+            '</div>'
+            '<div class="home-top10-stat">'
+            '<div class="home-top10-stat-label">6か月</div>'
+            f'<div class="home-top10-stat-value">{_pct_number_text(top_row["6か月"])}</div>'
+            '</div>'
+            '<div class="home-top10-stat">'
+            '<div class="home-top10-stat-label">1年</div>'
+            f'<div class="home-top10-stat-value">{_pct_number_text(top_row["1年"])}</div>'
+            '</div>'
+            '</div>'
+            f'<div class="home-top10-judge">{html.escape(str(top_row["判定"]))}</div>'
+            '</div>'
+        )
+    top10_mobile.markdown("".join(top10_cards), unsafe_allow_html=True)
+
     st.caption("※ 同じScore表示でも、順位は内部のより細かい値によって決まる場合があります。")
 
     st.markdown("### 🧭 なぜこの順位？")
