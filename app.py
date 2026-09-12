@@ -572,7 +572,7 @@ def _build_ranking_explanation(row, full_df):
     else:
         trend = "期間別の騰落率には強弱があり、短期と中長期で方向がそろっていません。"
 
-    position_bits = [f"Atlas Score {score:.0f}で、現在50社中 #{rank} です。"]
+    position_bits = [f"Atlas Score {score:.1f}で、現在50社中 #{rank} です。"]
     if rank > 1 and len(full_df) >= rank - 1:
         upper_score = float(full_df.iloc[rank - 2]["Atlas Score"])
         position_bits.append(f"1つ上の順位とは {upper_score - score:.1f}pt 差です。")
@@ -1174,7 +1174,7 @@ with tabs[0]:
     a.metric("🌍 対象銘柄", f"{len(df)} / 50")
     b.metric("🔥 強い＋", int((df["判定"] == "強い＋").sum()))
     c.metric("📈 ＋", int((df["判定"] == "＋").sum()))
-    d.metric("🎯 平均Score", f'{df["Atlas Score"].mean():.0f}')
+    d.metric("🎯 平均Score", f'{df["Atlas Score"].mean():.1f}')
     e.metric("🕒 最終更新", str(df["最終日"].max()))
     st.markdown("## 🔥 今日の注目 TOP10")
     st.caption("Atlas Scoreをもとに、現在の注目度が高い銘柄を表示しています。")
@@ -1204,7 +1204,7 @@ with tabs[0]:
             "3か月": st.column_config.NumberColumn(format="%.2f%%"),
             "6か月": st.column_config.NumberColumn(format="%.2f%%"),
             "1年": st.column_config.NumberColumn(format="%.2f%%"),
-            "Atlas Score": st.column_config.ProgressColumn(min_value=0, max_value=100, format="%.0f"),
+            "Atlas Score": st.column_config.ProgressColumn(min_value=0, max_value=100, format="%.1f"),
         },
     )
 
@@ -1226,7 +1226,7 @@ with tabs[0]:
     rank_card = st.container(border=True)
     rank_card.markdown(
         f"#### #{rank_detail['rank']} {selected_rank_company}　"
-        f"<span class='badge'>Atlas Score {rank_detail['score']:.0f}</span>",
+        f"<span class='badge'>Atlas Score {rank_detail['score']:.1f}</span>",
         unsafe_allow_html=True,
     )
     rank_card.caption(rank_detail["position"])
@@ -1298,7 +1298,7 @@ with tabs[1]:
             "Atlas Score": st.column_config.ProgressColumn(
                 min_value=0,
                 max_value=100,
-                format="%.0f",
+                format="%.1f",
             ),
         },
     )
@@ -1313,7 +1313,7 @@ with tabs[1]:
             f"<div class=\"mobile-rank\">#{int(mobile_row['順位'])}</div>"
             f"<div class=\"mobile-company\">{html.escape(str(mobile_row['会社名']))}</div>"
             f"<div class=\"mobile-meta\">{html.escape(str(mobile_row['国']))} ・ {html.escape(str(mobile_row['業種']))}</div>"
-            f"<div class=\"mobile-score\">Atlas Score {int(mobile_row['Atlas Score'])}</div>"
+            f"<div class=\"mobile-score\">Atlas Score {float(mobile_row['Atlas Score']):.1f}</div>"
             "<div class=\"mobile-stats\">"
             f"1か月 {_pct_number_text(mobile_row['1か月'])} ｜ 3か月 {_pct_number_text(mobile_row['3か月'])}<br>"
             f"6か月 {_pct_number_text(mobile_row['6か月'])} ｜ 1年 {_pct_number_text(mobile_row['1年'])}"
@@ -1350,7 +1350,7 @@ with tabs[2]:
 
     # 6個の重要指標を、スマホでも崩れにくい3列×2段で表示。
     c1, c2, c3 = st.columns(3)
-    c1.metric("Atlas Score", f'{row["Atlas Score"]:.0f}')
+    c1.metric("Atlas Score", f'{row["Atlas Score"]:.1f}')
     c2.metric("判定", row["判定"])
     c3.metric("1か月", _pct_text(row["1か月"]))
 
@@ -1557,7 +1557,7 @@ with tabs[3]:
                 "Atlas Score": st.column_config.ProgressColumn(
                     min_value=0,
                     max_value=100,
-                    format="%.0f",
+                    format="%.1f",
                 ),
             },
         )
@@ -1571,7 +1571,7 @@ with tabs[3]:
             judge = html.escape(str(compare_row["判定"]))
             price = compare_row["円換算価格"]
             price_text = f"¥{price:,.0f}" if pd.notna(price) else "-"
-            score_text = f"{float(compare_row['Atlas Score']):.0f}"
+            score_text = f"{float(compare_row['Atlas Score']):.1f}"
 
             period_values = {}
             for period in ["1か月", "3か月", "6か月", "1年"]:
@@ -1815,7 +1815,7 @@ with tabs[4]:
                 "3か月": st.column_config.NumberColumn(format="%.2f%%"),
                 "6か月": st.column_config.NumberColumn(format="%.2f%%"),
                 "1年": st.column_config.NumberColumn(format="%.2f%%"),
-                "Atlas Score": st.column_config.ProgressColumn(min_value=0, max_value=100, format="%.0f"),
+                "Atlas Score": st.column_config.ProgressColumn(min_value=0, max_value=100, format="%.1f"),
             },
         )
 
@@ -2014,7 +2014,7 @@ with tabs[6]:
             hide_index=True,
             column_config={
                 "円換算価格": st.column_config.NumberColumn(format="¥%.0f"),
-                "Atlas Score": st.column_config.ProgressColumn(min_value=0, max_value=100, format="%.0f"),
+                "Atlas Score": st.column_config.ProgressColumn(min_value=0, max_value=100, format="%.1f"),
             },
         )
     else:
