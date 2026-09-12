@@ -878,6 +878,102 @@ def analyze_news_with_ai(company_name, title, source_summary=""):
         }
 
 
+@st.cache_data(ttl=86400, show_spinner=False)
+def analyze_comparison_with_ai(compare_payload_json):
+    """選択銘柄の価格トレンドとAtlas Scoreだけを、初心者向けに比較整理する。"""
+    try:
+        compare_payload = json.loads(compare_payload_json)
+        client = OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
+
+        prompt = f"""
+あなたはAtlas50の初心者向け「銘柄比較」解説AIです。
+以下の比較データだけを使って、違いを分かりやすく整理してください。
+
+比較データ:
+{json.dumps(compare_payload, ensure_ascii=False, indent=2)}
+
+次のJSONだけを返してください。
+
+{{
+  "overview": "比較全体を2文以内で要約",
+  "company_notes": [
+    {{"company": "会社名", "note": "このデータから読み取れる特徴を1〜2文"}}
+  ],
+  "key_differences": [
+    "比較で特に差が出ている点",
+    "別の重要な差"
+  ],
+  "watch_points": [
+    "比較するときに注意して確認したい点"
+  ]
+}}
+
+ルール:
+- 必ず与えられた数値とAtlas Score内訳だけを根拠にする
+- 決算、企業価値、ニュース、将来業績など、入力にない情報を推測しない
+- 買う・売る・おすすめ・どちらを選ぶべきか、という投資推奨はしない
+- 「A社の方が優れている」と単純に順位付けせず、期間やScore項目ごとの違いを説明する
+- 上昇率が高いことを将来の上昇保証として扱わない
+- Atlas Scoreは価格トレンドを整理する学習・監視指標として扱う
+- key_differencesは最大3件、watch_pointsは最大3件
+- company_notesは入力された会社をすべて1件ずつ含める
+- 初心者向けの自然な日本語で簡潔に書く
+"""
+
+        response = client.responses.create(
+            model="gpt-5.6-luna",
+            input=prompt,
+        )
+
+        raw_text = response.output_text.strip()
+        if raw_text.startswith("```"):
+            raw_text = raw_text.replace("```json", "").replace("```", "").strip()
+
+        parsed = json.loads(raw_text)
+
+        overview = str(parsed.get("overview", "")).strip()
+        company_notes = parsed.get("company_notes", [])
+        key_differences = parsed.get("key_differences", [])
+        watch_points = parsed.get("watch_points", [])
+
+        if not isinstance(company_notes, list):
+            company_notes = []
+        if not isinstance(key_differences, list):
+            key_differences = []
+        if not isinstance(watch_points, list):
+            watch_points = []
+
+        valid_names = {
+            str(item.get("company", ""))
+            for item in compare_payload.get("companies", [])
+            if isinstance(item, dict)
+        }
+
+        cleaned_notes = []
+        for item in company_notes:
+            if not isinstance(item, dict):
+                continue
+            company = str(item.get("company", "")).strip()
+            note = str(item.get("note", "")).strip()
+            if company in valid_names and note:
+                cleaned_notes.append({"company": company, "note": note})
+
+        return {
+            "overview": overview or "選択した銘柄の価格トレンドとAtlas Scoreを比較しました。",
+            "company_notes": cleaned_notes,
+            "key_differences": [str(x).strip() for x in key_differences[:3] if str(x).strip()],
+            "watch_points": [str(x).strip() for x in watch_points[:3] if str(x).strip()],
+        }
+
+    except Exception:
+        return {
+            "overview": "AI比較解説を取得できませんでした。基本比較表とグラフはそのまま確認できます。",
+            "company_notes": [],
+            "key_differences": [],
+            "watch_points": ["AIの応答を取得できませんでした。時間をおいて再度お試しください。"],
+        }
+
+
 # ------------------------------
 # セッション状態
 # ------------------------------
@@ -886,6 +982,12 @@ if "favorites" not in st.session_state:
 
 if "portfolio" not in st.session_state:
     st.session_state.portfolio = pd.DataFrame(columns=["Ticker", "株数", "平均取得単価"])
+
+if "comparison_ai_result" not in st.session_state:
+    st.session_state.comparison_ai_result = None
+
+if "comparison_ai_key" not in st.session_state:
+    st.session_state.comparison_ai_key = None
 
 
 # ------------------------------
@@ -1385,6 +1487,91 @@ with tabs[3]:
             st.altair_chart(score_chart, use_container_width=True)
         else:
             st.caption("Score内訳を比較できませんでした。")
+
+        st.markdown("### 🤖 Atlas AI 比較解説")
+        st.caption(
+            "選択した期間別の値動きとAtlas Score内訳だけを使い、各社の違いを初心者向けに整理します。"
+        )
+
+        compare_payload = {"companies": []}
+        for _, ai_row in compare_df.iterrows():
+            ai_parts = ai_row["Score内訳"] if isinstance(ai_row["Score内訳"], dict) else {}
+            compare_payload["companies"].append(
+                {
+                    "company": str(ai_row["会社名"]),
+                    "country": str(ai_row["国"]),
+                    "sector": str(ai_row["業種"]),
+                    "returns_pct": {
+                        "1か月": None if pd.isna(ai_row["1か月"]) else round(float(ai_row["1か月"]) * 100, 2),
+                        "3か月": None if pd.isna(ai_row["3か月"]) else round(float(ai_row["3か月"]) * 100, 2),
+                        "6か月": None if pd.isna(ai_row["6か月"]) else round(float(ai_row["6か月"]) * 100, 2),
+                        "1年": None if pd.isna(ai_row["1年"]) else round(float(ai_row["1年"]) * 100, 2),
+                    },
+                    "atlas_score": round(float(ai_row["Atlas Score"]), 1),
+                    "judge": str(ai_row["判定"]),
+                    "score_parts": {
+                        str(k): (None if pd.isna(v) else round(float(v), 1))
+                        for k, v in ai_parts.items()
+                    },
+                }
+            )
+
+        compare_payload_json = json.dumps(
+            compare_payload,
+            ensure_ascii=False,
+            sort_keys=True,
+        )
+
+        if st.button(
+            "🤖 Atlas AIで比較を整理する",
+            key="compare_ai_button",
+            use_container_width=True,
+        ):
+            with st.spinner("Atlas AIが比較データを整理中..."):
+                st.session_state.comparison_ai_result = analyze_comparison_with_ai(
+                    compare_payload_json
+                )
+                st.session_state.comparison_ai_key = compare_payload_json
+
+        ai_result = None
+        if st.session_state.comparison_ai_key == compare_payload_json:
+            ai_result = st.session_state.comparison_ai_result
+
+        if ai_result:
+            st.success(
+                "### 🧭 全体像\n\n"
+                + ai_result.get(
+                    "overview",
+                    "選択した銘柄の価格トレンドとAtlas Scoreを比較しました。",
+                )
+            )
+
+            company_notes = ai_result.get("company_notes", [])
+            if company_notes:
+                st.markdown("#### 🏢 各社の特徴")
+                for note in company_notes:
+                    note_card = st.container(border=True)
+                    note_card.markdown(f"**{note.get('company', '企業')}**")
+                    note_card.write(note.get("note", ""))
+
+            key_differences = ai_result.get("key_differences", [])
+            if key_differences:
+                st.info(
+                    "### 🔍 主な違い\n\n"
+                    + "\n\n".join(f"・{item}" for item in key_differences)
+                )
+
+            watch_points = ai_result.get("watch_points", [])
+            if watch_points:
+                st.warning(
+                    "### ⚠️ 確認ポイント\n\n"
+                    + "\n\n".join(f"・{item}" for item in watch_points)
+                )
+
+            st.caption(
+                "※ AI解説は表示中の価格トレンドとAtlas Scoreを整理したものです。"
+                "投資推奨や将来の利益予測ではありません。"
+            )
 
         st.info(
             "### 🔰 比較の見方\n\n"
