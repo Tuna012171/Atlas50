@@ -478,6 +478,142 @@ def _build_attention_reasons(
 
 
 
+SCORE_PART_MAX = {
+    "1週モメンタム": 12,
+    "1か月モメンタム": 15,
+    "3か月モメンタム": 15,
+    "移動平均": 28,
+    "RSI": 10,
+    "出来高": 10,
+    "52週高値": 10,
+}
+
+
+def _build_ranking_explanation(row, full_df):
+    """ホームの「なぜこの順位？」用。Atlasデータだけで順位の背景を説明する。"""
+    rank = int(row["順位"])
+    score = float(row["Atlas Score"])
+    parts = row.get("Score内訳", {}) or {}
+
+    part_messages = {
+        "1週モメンタム": "直近1週間の勢いがScoreを支えています",
+        "1か月モメンタム": "1か月の勢いがScoreを押し上げています",
+        "3か月モメンタム": "3か月の勢いがScoreを押し上げています",
+        "移動平均": "移動平均の並びが強く、中期トレンド面の得点が大きいです",
+        "RSI": "RSIがAtlasの評価ゾーンにあり、勢いの安定感につながっています",
+        "出来高": "出来高の活発さが注目度を支えています",
+        "52週高値": "52週高値に比較的近く、価格位置の強さがScoreに反映されています",
+    }
+
+    normalized_parts = []
+    for name, max_value in SCORE_PART_MAX.items():
+        value = float(parts.get(name, 0) or 0)
+        ratio = value / max_value if max_value else 0
+        normalized_parts.append((ratio, value, name))
+
+    normalized_parts.sort(reverse=True)
+    strengths = []
+    for ratio, value, name in normalized_parts[:3]:
+        if value <= 0:
+            continue
+        strengths.append(part_messages[name])
+        if len(strengths) >= 2:
+            break
+
+    if not strengths:
+        strengths.append("特定の1項目ではなく、複数の指標を合わせた総合点で現在の順位になっています")
+
+    def pct_value(col):
+        value = row.get(col)
+        return None if pd.isna(value) else float(value) * 100
+
+    one_month = pct_value("1か月")
+    three_month = pct_value("3か月")
+    six_month = pct_value("6か月")
+    one_year = pct_value("1年")
+    trend_values = [one_month, three_month, six_month, one_year]
+
+    if all(v is not None and v > 0 for v in trend_values):
+        trend = "1か月〜1年がすべてプラスで、短期から長期まで値動きの方向がそろっています。"
+    elif all(v is not None and v < 0 for v in trend_values):
+        trend = "1か月〜1年がすべてマイナスで、複数の期間で弱い値動きが続いています。"
+    elif (
+        one_month is not None
+        and three_month is not None
+        and six_month is not None
+        and one_month > 0
+        and three_month > 0
+        and six_month > 0
+    ):
+        trend = "直近半年はプラスが続いており、中期的な上向きの流れが見られます。"
+    elif (
+        one_month is not None
+        and six_month is not None
+        and one_year is not None
+        and one_month < 0
+        and six_month > 0
+        and one_year > 0
+    ):
+        trend = "中長期ではプラスですが、直近1か月は調整しており、期間によって強弱があります。"
+    elif (
+        one_month is not None
+        and three_month is not None
+        and one_month > 0
+        and three_month < 0
+    ):
+        trend = "直近1か月は反発していますが、3か月ではまだマイナスで回復途中の動きです。"
+    elif (
+        one_month is not None
+        and three_month is not None
+        and one_month < 0
+        and three_month < 0
+    ):
+        trend = "短期〜中期ではマイナスが続いており、足元の勢いは弱めです。"
+    else:
+        trend = "期間別の騰落率には強弱があり、短期と中長期で方向がそろっていません。"
+
+    position_bits = [f"Atlas Score {score:.0f}で、現在50社中 #{rank} です。"]
+    if rank > 1 and len(full_df) >= rank - 1:
+        upper_score = float(full_df.iloc[rank - 2]["Atlas Score"])
+        position_bits.append(f"1つ上の順位とは {upper_score - score:.1f}pt 差です。")
+    if rank < len(full_df):
+        lower_score = float(full_df.iloc[rank]["Atlas Score"])
+        position_bits.append(f"1つ下の順位には {score - lower_score:.1f}pt リードしています。")
+    position = " ".join(position_bits)
+
+    checks = []
+    if one_month is not None and abs(one_month) >= 15:
+        checks.append("直近1か月の値動きが大きいため、短期の振れには注意して確認したい状態です")
+
+    rsi = row.get("RSI")
+    if pd.notna(rsi):
+        rsi = float(rsi)
+        if rsi >= 75:
+            checks.append("RSIが高めで、短期的な過熱感がないか確認したい水準です")
+        elif rsi <= 35:
+            checks.append("RSIが低めで、弱い勢いが続いていないか確認したい水準です")
+
+    volume_ratio = row.get("出来高倍率")
+    if pd.notna(volume_ratio) and float(volume_ratio) < 0.8:
+        checks.append("出来高は20日平均を下回っており、上昇や反発の勢いが伴っているか確認が必要です")
+
+    high_gap = row.get("高値乖離")
+    if pd.notna(high_gap) and float(high_gap) < -0.15:
+        checks.append("52週高値から距離があり、価格位置ではまだ回復余地と弱さの両方を確認する必要があります")
+
+    if not checks:
+        checks.append("Atlas上で大きく目立つ警戒サインは少なめですが、順位は将来の上昇を保証するものではありません")
+
+    return {
+        "rank": rank,
+        "score": score,
+        "position": position,
+        "strengths": strengths,
+        "trend": trend,
+        "checks": checks[:2],
+    }
+
+
 def score_parts(cur, r1w, r1m, r3m, sma5, sma20, sma60, rsi, vr, dist_high):
     # 過去バージョンとの比較可能性を保つため、Score式自体は変更しない。
     momentum_1w = max(0, min(12, 6 + r1w * 120))
@@ -1070,6 +1206,41 @@ with tabs[0]:
             "1年": st.column_config.NumberColumn(format="%.2f%%"),
             "Atlas Score": st.column_config.ProgressColumn(min_value=0, max_value=100, format="%.0f"),
         },
+    )
+
+
+    st.markdown("### 🧭 なぜこの順位？")
+    st.caption("TOP10から1社を選ぶと、Atlas Scoreの内訳と値動きから現在の順位の背景を整理します。")
+
+    rank_options = df.head(10)["会社名"].tolist()
+    selected_rank_company = st.selectbox(
+        "ランキング理由を見る企業",
+        rank_options,
+        key="home_rank_reason_company",
+        label_visibility="collapsed",
+    )
+
+    rank_row = df[df["会社名"] == selected_rank_company].iloc[0]
+    rank_detail = _build_ranking_explanation(rank_row, df)
+
+    rank_card = st.container(border=True)
+    rank_card.markdown(
+        f"#### #{rank_detail['rank']} {selected_rank_company}　"
+        f"<span class='badge'>Atlas Score {rank_detail['score']:.0f}</span>",
+        unsafe_allow_html=True,
+    )
+    rank_card.caption(rank_detail["position"])
+    rank_card.info(
+        "**🎯 順位を押し上げている主な要因**\n\n"
+        + "\n\n".join(f"・{item}" for item in rank_detail["strengths"])
+        + f"\n\n**📈 値動きの流れ**\n\n・{rank_detail['trend']}"
+    )
+    rank_card.warning(
+        "**⚠️ チェックポイント**\n\n"
+        + "\n\n".join(f"・{item}" for item in rank_detail["checks"])
+    )
+    rank_card.caption(
+        "※ 順位は現在の価格トレンドをAtlas Scoreで整理したものです。買い推奨・将来の利益予測ではありません。"
     )
  
 # ------------------------------
