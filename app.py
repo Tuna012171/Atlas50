@@ -150,78 +150,83 @@ HTML要素だけを隠す方式より、不要な空白が残りにくい。
     display: none;
 }
 
-.st-key-pulse_region_mobile {
-    display: none;
+.st-key-pulse_region_mobile,
+.st-key-favorite_mobile,
+.st-key-portfolio_mobile,
+.st-key-budget_mobile {
+    display: none !important;
 }
 
-.st-key-home_top10_mobile {
-    display: none;
+
+.atlas-card-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 10px;
+    align-items: stretch;
 }
 
-.home-top10-card {
+.atlas-card-grid .mobile-detail-card {
+    margin-bottom: 0;
+    height: 100%;
+}
+
+.mobile-detail-card {
     border: 1px solid rgba(120, 120, 120, 0.20);
     border-radius: 14px;
     padding: 14px;
     margin-bottom: 10px;
 }
 
-.home-top10-head {
+.mobile-detail-head {
     display: flex;
     align-items: flex-start;
     justify-content: space-between;
     gap: 10px;
 }
 
-.home-top10-rank {
-    font-size: 0.78rem;
-    font-weight: 700;
+.mobile-detail-company {
+    font-size: 1.05rem;
+    font-weight: 750;
+}
+
+.mobile-detail-meta {
+    margin-top: 2px;
+    font-size: 0.80rem;
     opacity: 0.68;
 }
 
-.home-top10-company {
-    font-size: 1.08rem;
-    font-weight: 760;
-    margin-top: 2px;
-}
-
-.home-top10-meta {
-    font-size: 0.82rem;
-    opacity: 0.68;
-    margin-top: 2px;
-}
-
-.home-top10-score {
-    text-align: right;
-    font-size: 0.96rem;
-    font-weight: 760;
+.mobile-detail-score {
+    font-size: 0.95rem;
+    font-weight: 750;
     white-space: nowrap;
 }
 
-.home-top10-grid {
+.mobile-detail-grid {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 8px;
-    margin-top: 12px;
+    gap: 8px 10px;
+    margin-top: 11px;
 }
 
-.home-top10-stat {
+.mobile-detail-item {
     padding: 8px 9px;
     border-radius: 10px;
     background: rgba(120, 120, 120, 0.06);
 }
 
-.home-top10-stat-label {
+.mobile-detail-label {
     font-size: 0.72rem;
-    opacity: 0.62;
+    opacity: 0.64;
 }
 
-.home-top10-stat-value {
-    font-size: 0.90rem;
-    font-weight: 680;
+.mobile-detail-value {
     margin-top: 1px;
+    font-size: 0.90rem;
+    font-weight: 650;
+    overflow-wrap: anywhere;
 }
 
-.home-top10-judge {
+.mobile-detail-judge {
     display: inline-block;
     margin-top: 10px;
     padding: 3px 8px;
@@ -331,7 +336,7 @@ HTML要素だけを隠す方式より、不要な空白が残りにくい。
     font-size: 0.8rem;
 }
 
-@media (max-width: 768px) {
+@media (max-width: 1100px) {
     .mobile-list-wrap {
         display: block;
     }
@@ -339,14 +344,18 @@ HTML要素だけを隠す方式より、不要な空白が残りにくい。
     .st-key-world50_table,
     .st-key-compare_table,
     .st-key-pulse_region_table,
-    .st-key-home_top10_table {
-        display: none;
+    .st-key-favorite_table,
+    .st-key-portfolio_table,
+    .st-key-budget_table {
+        display: none !important;
     }
 
     .st-key-compare_mobile,
     .st-key-pulse_region_mobile,
-    .st-key-home_top10_mobile {
-        display: block;
+    .st-key-favorite_mobile,
+    .st-key-portfolio_mobile,
+    .st-key-budget_mobile {
+        display: block !important;
     }
 
     div[data-testid="stTabs"] div[role="tablist"] {
@@ -1441,8 +1450,7 @@ with tabs[0]:
     for col in ["1か月", "3か月", "6か月", "1年"]:
         top[col] = (top[col] * 100).round(2)
 
-    top10_table = st.container(key="home_top10_table")
-    top10_table.dataframe(
+    st.dataframe(
         top,
         use_container_width=True,
         hide_index=True,
@@ -1454,43 +1462,6 @@ with tabs[0]:
             "Atlas Score": st.column_config.ProgressColumn(min_value=0, max_value=100, format="%.1f"),
         },
     )
-
-    top10_mobile = st.container(key="home_top10_mobile")
-    top10_cards = []
-    for _, top_row in top.iterrows():
-        top10_cards.append(
-            '<div class="home-top10-card">'
-            '<div class="home-top10-head">'
-            '<div>'
-            f'<div class="home-top10-rank">#{int(top_row["順位"])}</div>'
-            f'<div class="home-top10-company">{html.escape(str(top_row["会社名"]))}</div>'
-            f'<div class="home-top10-meta">{html.escape(str(top_row["国"]))}</div>'
-            '</div>'
-            f'<div class="home-top10-score">Atlas Score<br>{float(top_row["Atlas Score"]):.1f}</div>'
-            '</div>'
-            '<div class="home-top10-grid">'
-            '<div class="home-top10-stat">'
-            '<div class="home-top10-stat-label">1か月</div>'
-            f'<div class="home-top10-stat-value">{_pct_number_text(top_row["1か月"])}</div>'
-            '</div>'
-            '<div class="home-top10-stat">'
-            '<div class="home-top10-stat-label">3か月</div>'
-            f'<div class="home-top10-stat-value">{_pct_number_text(top_row["3か月"])}</div>'
-            '</div>'
-            '<div class="home-top10-stat">'
-            '<div class="home-top10-stat-label">6か月</div>'
-            f'<div class="home-top10-stat-value">{_pct_number_text(top_row["6か月"])}</div>'
-            '</div>'
-            '<div class="home-top10-stat">'
-            '<div class="home-top10-stat-label">1年</div>'
-            f'<div class="home-top10-stat-value">{_pct_number_text(top_row["1年"])}</div>'
-            '</div>'
-            '</div>'
-            f'<div class="home-top10-judge">{html.escape(str(top_row["判定"]))}</div>'
-            '</div>'
-        )
-    top10_mobile.markdown("".join(top10_cards), unsafe_allow_html=True)
-
     st.caption("※ 同じScore表示でも、順位は内部のより細かい値によって決まる場合があります。")
 
     st.markdown("### 🧭 なぜこの順位？")
@@ -2065,43 +2036,67 @@ with tabs[3]:
 with tabs[4]:
     st.markdown("## ⭐ お気に入り")
     st.caption("気になる銘柄を保存して、値動きやAtlas Scoreをまとめて比較できます。")
-    
+
     favdf = df[df["Ticker"].isin(st.session_state.favorites)].copy()
 
     if favdf.empty:
         st.info("🔎 個別分析から気になる企業をお気に入りに追加すると、ここでまとめて比較できます。")
     else:
-        favshow = favdf[
-            [
-                "順位",
-                "会社名",
-                "国",
-                "円換算価格",
-                "1か月",
-                "3か月",
-                "6か月",
-                "1年",
-                "Atlas Score",
-                "判定",
-            ]
-        ].copy()
+        favorite_cards = []
+        for _, fav_row in favdf.iterrows():
+            price = (
+                f"¥{float(fav_row['円換算価格']):,.0f}"
+                if pd.notna(fav_row["円換算価格"])
+                else "-"
+            )
+            favorite_cards.append(
+                '<div class="mobile-detail-card">'
+                '<div class="mobile-detail-head">'
+                '<div>'
+                f'<div class="mobile-detail-company">#{int(fav_row["順位"])} {html.escape(str(fav_row["会社名"]))}</div>'
+                f'<div class="mobile-detail-meta">{html.escape(str(fav_row["国"]))} ・ {html.escape(str(fav_row["業種"]))}</div>'
+                '</div>'
+                f'<div class="mobile-detail-score">Score {float(fav_row["Atlas Score"]):.1f}</div>'
+                '</div>'
+                '<div class="mobile-detail-grid">'
+                f'<div class="mobile-detail-item"><div class="mobile-detail-label">円換算価格</div><div class="mobile-detail-value">{price}</div></div>'
+                f'<div class="mobile-detail-item"><div class="mobile-detail-label">1か月</div><div class="mobile-detail-value">{_pct_text(fav_row["1か月"])}</div></div>'
+                f'<div class="mobile-detail-item"><div class="mobile-detail-label">3か月</div><div class="mobile-detail-value">{_pct_text(fav_row["3か月"])}</div></div>'
+                f'<div class="mobile-detail-item"><div class="mobile-detail-label">6か月</div><div class="mobile-detail-value">{_pct_text(fav_row["6か月"])}</div></div>'
+                f'<div class="mobile-detail-item"><div class="mobile-detail-label">1年</div><div class="mobile-detail-value">{_pct_text(fav_row["1年"])}</div></div>'
+                '</div>'
+                f'<div class="mobile-detail-judge">{html.escape(str(fav_row["判定"]))}</div>'
+                '</div>'
+            )
 
-        for col in ["1か月", "3か月", "6か月", "1年"]:
-            favshow[col] = (favshow[col] * 100).round(2)
-
-        st.dataframe(
-            favshow,
-            use_container_width=True,
-            hide_index=True,
-            column_config={
-                "円換算価格": st.column_config.NumberColumn(format="¥%.0f"),
-                "1か月": st.column_config.NumberColumn(format="%.2f%%"),
-                "3か月": st.column_config.NumberColumn(format="%.2f%%"),
-                "6か月": st.column_config.NumberColumn(format="%.2f%%"),
-                "1年": st.column_config.NumberColumn(format="%.2f%%"),
-                "Atlas Score": st.column_config.ProgressColumn(min_value=0, max_value=100, format="%.1f"),
-            },
+        st.markdown(
+            '<div class="atlas-card-grid">' + "".join(favorite_cards) + '</div>',
+            unsafe_allow_html=True,
         )
+
+        with st.expander("📋 表で比較する"):
+            favshow = favdf[
+                [
+                    "順位", "会社名", "国", "円換算価格",
+                    "1か月", "3か月", "6か月", "1年",
+                    "Atlas Score", "判定",
+                ]
+            ].copy()
+            for col in ["1か月", "3か月", "6か月", "1年"]:
+                favshow[col] = (favshow[col] * 100).round(2)
+            st.dataframe(
+                favshow,
+                use_container_width=True,
+                hide_index=True,
+                column_config={
+                    "円換算価格": st.column_config.NumberColumn(format="¥%.0f"),
+                    "1か月": st.column_config.NumberColumn(format="%.2f%%"),
+                    "3か月": st.column_config.NumberColumn(format="%.2f%%"),
+                    "6か月": st.column_config.NumberColumn(format="%.2f%%"),
+                    "1年": st.column_config.NumberColumn(format="%.2f%%"),
+                    "Atlas Score": st.column_config.ProgressColumn(min_value=0, max_value=100, format="%.1f"),
+                },
+            )
 
 
 # ------------------------------
@@ -2140,10 +2135,15 @@ with tabs[5]:
             continue
 
         rr = rr.iloc[0]
-        qty = float(p.get("株数", 0) or 0)
-        avg = float(p.get("平均取得単価", 0) or 0)
+        qty = pd.to_numeric(pd.Series([p.get("株数")]), errors="coerce").iloc[0]
+        avg = pd.to_numeric(pd.Series([p.get("平均取得単価")]), errors="coerce").iloc[0]
 
-        if qty <= 0:
+        if pd.isna(qty) or pd.isna(avg):
+            continue
+
+        qty = float(qty)
+        avg = float(avg)
+        if qty <= 0 or avg <= 0:
             continue
 
         if pd.isna(rr["円換算価格"]):
@@ -2162,19 +2162,10 @@ with tabs[5]:
         current = qty * float(rr["円換算価格"])
         pnl = current - invested
 
-        calc.append(
-            [
-                p["Ticker"],
-                rr["会社名"],
-                qty,
-                invested,
-                current,
-                pnl,
-                (pnl / invested if invested else 0),
-                rr["Atlas Score"],
-                rr["判定"],
-            ]
-        )
+        calc.append([
+            p["Ticker"], rr["会社名"], qty, invested, current, pnl,
+            (pnl / invested if invested else 0), rr["Atlas Score"], rr["判定"],
+        ])
 
     if skipped_portfolio:
         st.warning(
@@ -2186,61 +2177,65 @@ with tabs[5]:
         pf = pd.DataFrame(
             calc,
             columns=[
-                "Ticker",
-                "会社名",
-                "株数",
-                "投資額(円)",
-                "評価額(円)",
-                "損益(円)",
-                "損益率",
-                "Score",
-                "判定",
+                "Ticker", "会社名", "株数", "投資額(円)", "評価額(円)",
+                "損益(円)", "損益率", "Score", "判定",
             ],
         )
 
         st.markdown("### 📌 保有状況サマリー")
-
         total_invested = pf["投資額(円)"].sum()
         total_current = pf["評価額(円)"].sum()
         total_pnl = pf["損益(円)"].sum()
-        total_pnl_rate = (
-            total_pnl / total_invested * 100
-            if total_invested
-            else 0
-        )
+        total_pnl_rate = total_pnl / total_invested * 100 if total_invested else 0
 
         p1, p2, p3 = st.columns(3)
+        p1.metric("💴 投資額", f"¥{total_invested:,.0f}")
+        p2.metric("📊 評価額", f"¥{total_current:,.0f}")
+        p3.metric("📈 損益", f"¥{total_pnl:,.0f}", delta=f"{total_pnl_rate:+.2f}%")
 
-        p1.metric(
-            "💴 投資額",
-            f"¥{total_invested:,.0f}"
+        portfolio_cards = []
+        for _, pf_row in pf.iterrows():
+            pnl_rate_text = f"{float(pf_row['損益率']) * 100:+.2f}%"
+            portfolio_cards.append(
+                '<div class="mobile-detail-card">'
+                '<div class="mobile-detail-head">'
+                '<div>'
+                f'<div class="mobile-detail-company">{html.escape(str(pf_row["会社名"]))}</div>'
+                f'<div class="mobile-detail-meta">{html.escape(str(pf_row["Ticker"]))} ・ {float(pf_row["株数"]):g}株</div>'
+                '</div>'
+                f'<div class="mobile-detail-score">Score {float(pf_row["Score"]):.1f}</div>'
+                '</div>'
+                '<div class="mobile-detail-grid">'
+                f'<div class="mobile-detail-item"><div class="mobile-detail-label">投資額</div><div class="mobile-detail-value">¥{float(pf_row["投資額(円)"]):,.0f}</div></div>'
+                f'<div class="mobile-detail-item"><div class="mobile-detail-label">評価額</div><div class="mobile-detail-value">¥{float(pf_row["評価額(円)"]):,.0f}</div></div>'
+                f'<div class="mobile-detail-item"><div class="mobile-detail-label">損益</div><div class="mobile-detail-value">¥{float(pf_row["損益(円)"]):+,.0f}</div></div>'
+                f'<div class="mobile-detail-item"><div class="mobile-detail-label">損益率</div><div class="mobile-detail-value">{pnl_rate_text}</div></div>'
+                '</div>'
+                f'<div class="mobile-detail-judge">{html.escape(str(pf_row["判定"]))}</div>'
+                '</div>'
+            )
+
+        st.markdown(
+            '<div class="atlas-card-grid">' + "".join(portfolio_cards) + '</div>',
+            unsafe_allow_html=True,
         )
 
-        p2.metric(
-            "📊 評価額",
-            f"¥{total_current:,.0f}"
-        )
-
-        p3.metric(
-            "📈 損益",
-            f"¥{total_pnl:,.0f}",
-            delta=f"{total_pnl_rate:+.2f}%"
-        )
-
-        pf_display = pf.copy()
-        pf_display["損益率"] = (pf_display["損益率"] * 100).round(2)
-
-        st.dataframe(
-            pf_display,
-            use_container_width=True,
-            hide_index=True,
-            column_config={
-                "投資額(円)": st.column_config.NumberColumn(format="¥%.0f"),
-                "評価額(円)": st.column_config.NumberColumn(format="¥%.0f"),
-                "損益(円)": st.column_config.NumberColumn(format="¥%.0f"),
-                "損益率": st.column_config.NumberColumn(format="%.2f%%"),
-            },
-        )
+        with st.expander("📋 詳細を表で見る"):
+            pf_display = pf.copy()
+            pf_display["損益率"] = (pf_display["損益率"] * 100).round(2)
+            st.dataframe(
+                pf_display,
+                use_container_width=True,
+                hide_index=True,
+                column_config={
+                    "投資額(円)": st.column_config.NumberColumn(format="¥%.0f"),
+                    "評価額(円)": st.column_config.NumberColumn(format="¥%.0f"),
+                    "損益(円)": st.column_config.NumberColumn(format="¥%.0f"),
+                    "損益率": st.column_config.NumberColumn(format="%.2f%%"),
+                },
+            )
+    elif not edited.dropna(subset=["Ticker"]).empty:
+        st.caption("株数と平均取得単価を入力すると、保有状況サマリーと損益が表示されます。")
 
     csv = edited.to_csv(index=False).encode("utf-8-sig")
     st.download_button("保有株CSVを保存", csv, "atlas50_portfolio.csv", "text/csv")
@@ -2281,26 +2276,43 @@ with tabs[6]:
         )
         buyable = buyable.sort_values(["Atlas Score", "円換算価格"], ascending=[False, True])
 
-        st.dataframe(
-            buyable[
-                [
-                    "順位",
-                    "会社名",
-                    "国",
-                    "業種",
-                    "円換算価格",
-                    "予算で買える株数",
-                    "Atlas Score",
-                    "判定",
-                ]
-            ],
-            use_container_width=True,
-            hide_index=True,
-            column_config={
-                "円換算価格": st.column_config.NumberColumn(format="¥%.0f"),
-                "Atlas Score": st.column_config.ProgressColumn(min_value=0, max_value=100, format="%.1f"),
-            },
+        budget_cards = []
+        for _, budget_row in buyable.iterrows():
+            budget_cards.append(
+                '<div class="mobile-detail-card">'
+                '<div class="mobile-detail-head">'
+                '<div>'
+                f'<div class="mobile-detail-company">#{int(budget_row["順位"])} {html.escape(str(budget_row["会社名"]))}</div>'
+                f'<div class="mobile-detail-meta">{html.escape(str(budget_row["国"]))} ・ {html.escape(str(budget_row["業種"]))}</div>'
+                '</div>'
+                f'<div class="mobile-detail-score">Score {float(budget_row["Atlas Score"]):.1f}</div>'
+                '</div>'
+                '<div class="mobile-detail-grid">'
+                f'<div class="mobile-detail-item"><div class="mobile-detail-label">1株の目安</div><div class="mobile-detail-value">¥{float(budget_row["円換算価格"]):,.0f}</div></div>'
+                f'<div class="mobile-detail-item"><div class="mobile-detail-label">予算で買える株数</div><div class="mobile-detail-value">{int(budget_row["予算で買える株数"])}株</div></div>'
+                '</div>'
+                f'<div class="mobile-detail-judge">{html.escape(str(budget_row["判定"]))}</div>'
+                '</div>'
+            )
+
+        st.markdown(
+            '<div class="atlas-card-grid">' + "".join(budget_cards) + '</div>',
+            unsafe_allow_html=True,
         )
+
+        with st.expander("📋 一覧を表で見る"):
+            st.dataframe(
+                buyable[[
+                    "順位", "会社名", "国", "業種", "円換算価格",
+                    "予算で買える株数", "Atlas Score", "判定",
+                ]],
+                use_container_width=True,
+                hide_index=True,
+                column_config={
+                    "円換算価格": st.column_config.NumberColumn(format="¥%.0f"),
+                    "Atlas Score": st.column_config.ProgressColumn(min_value=0, max_value=100, format="%.1f"),
+                },
+            )
     else:
         st.info("現在の予算内で1株買える企業はありません。")
 
