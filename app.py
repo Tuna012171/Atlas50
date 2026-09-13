@@ -13,7 +13,7 @@ from openai import OpenAI
 
 st.set_page_config(page_title="ATLAS 50", layout="wide", initial_sidebar_state="collapsed")
 
-APP_VERSION = "3.2.1"
+APP_VERSION = "3.2.2"
 APP_LABEL = "NOIR JP"
 AI_TIMEOUT_SECONDS = 20.0
 
@@ -154,7 +154,7 @@ WATCH_SORT_OPTIONS = [
 # Internal data keys remain Japanese for backward compatibility.
 # Short English kickers are intentionally kept as visual brand elements.
 # ------------------------------
-SIGNAL_EN = {"強い＋": "強い", "＋": "プラス", "様子見": "中立", "－": "弱い"}
+SIGNAL_EN = {"強い＋": "強い＋", "＋": "プラス", "様子見": "中立", "－": "弱い"}
 SCORE_PART_EN = {
     "1週モメンタム": "1週モメンタム", "1か月モメンタム": "1か月モメンタム",
     "3か月モメンタム": "3か月モメンタム", "移動平均": "移動平均", "RSI": "RSI",
@@ -218,6 +218,26 @@ def _section_intro(kicker, title, text):
         f'<div class="section-kicker">{html.escape(kicker)}</div>'
         f'<div class="section-title">{html.escape(title)}</div>'
         f'<div class="section-copy">{html.escape(text)}</div>',
+        unsafe_allow_html=True,
+    )
+
+
+def _noir_callout(title, lines=None, body=None, tone="info", target=None):
+    """NOIR専用の情報カード。Streamlit標準Alertの強い色味を避ける。"""
+    target = target or st
+    safe_title = html.escape(str(title))
+    safe_body = html.escape(str(body)) if body else ""
+    items = []
+    for item in (lines or []):
+        if item is None:
+            continue
+        items.append(f'<li>{html.escape(str(item))}</li>')
+    list_html = f'<ul>{"".join(items)}</ul>' if items else ""
+    body_html = f'<div class="atlas-callout-body">{safe_body}</div>' if safe_body else ""
+    target.markdown(
+        f'<div class="atlas-callout atlas-callout-{html.escape(str(tone))}">'
+        f'<div class="atlas-callout-title">{safe_title}</div>'
+        f'{body_html}{list_html}</div>',
         unsafe_allow_html=True,
     )
 
@@ -398,11 +418,30 @@ h2 { margin-top: 1.6rem !important; }
 }
 
 [data-testid="stExpander"] {
-    border: 1px solid #192733 !important;
-    border-radius: 9px !important;
-    background: #0A1016 !important;
+    border: 1px solid #17242E !important;
+    border-radius: 8px !important;
+    background: #090F14 !important;
+    box-shadow: none !important;
+    overflow: hidden;
 }
-[data-testid="stExpander"] summary { color: var(--atlas-text) !important; font-weight: 650; }
+[data-testid="stExpander"] details > summary {
+    color: #DCE3E8 !important;
+    font-weight: 650;
+    min-height: 42px;
+    padding: 0 13px !important;
+    transition: background .15s ease, color .15s ease;
+}
+[data-testid="stExpander"] details > summary:hover {
+    background: #0C141B !important;
+    color: var(--atlas-text) !important;
+}
+[data-testid="stExpander"] details[open] > summary {
+    border-bottom: 1px solid #13202A;
+    background: #0A1218 !important;
+}
+[data-testid="stExpander"] details > div {
+    padding-top: 8px !important;
+}
 
 [data-testid="stTabs"] [role="tablist"] {
     gap: 13px;
@@ -445,9 +484,15 @@ h2 { margin-top: 1.6rem !important; }
 
 [data-baseweb="input"] > div, [data-baseweb="select"] > div,
 [data-testid="stNumberInput"] input, [data-testid="stTextInput"] input {
-    background: #0B1117 !important;
-    border-color: var(--atlas-border) !important;
+    background: #0A1117 !important;
+    border-color: #1A2A35 !important;
     color: var(--atlas-text) !important;
+    border-radius: 7px !important;
+}
+[data-baseweb="input"]:focus-within, [data-baseweb="select"]:focus-within,
+[data-testid="stTextInput"]:focus-within, [data-testid="stNumberInput"]:focus-within {
+    outline: none !important;
+    box-shadow: 0 0 0 1px rgba(98,226,208,.22) !important;
 }
 [data-baseweb="popover"], [data-baseweb="menu"] { background: var(--atlas-surface-2) !important; }
 
@@ -456,10 +501,82 @@ h2 { margin-top: 1.6rem !important; }
 
 [data-testid="stAlert"] {
     border-radius: 8px !important;
-    border: 1px solid var(--atlas-border) !important;
-    background: #0E151C !important;
+    border: 1px solid #233440 !important;
+    background: #0C141A !important;
     color: var(--atlas-text) !important;
+    box-shadow: none !important;
 }
+[data-testid="stAlert"] > div { background: transparent !important; }
+
+.atlas-callout {
+    position: relative;
+    margin: 10px 0;
+    padding: 15px 17px 14px 18px;
+    border: 1px solid #1A2A34;
+    border-radius: 8px;
+    background: #0A1117;
+    color: #C8D1D9;
+    overflow: hidden;
+}
+.atlas-callout::before {
+    content: "";
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    width: 2px;
+    background: #526473;
+}
+.atlas-callout-title {
+    color: #E9EEF2;
+    font-size: .84rem;
+    font-weight: 780;
+    letter-spacing: .01em;
+    margin-bottom: 8px;
+}
+.atlas-callout-body {
+    color: #AAB7C2;
+    font-size: .82rem;
+    line-height: 1.68;
+}
+.atlas-callout ul {
+    margin: 7px 0 0 1.08rem;
+    padding: 0;
+}
+.atlas-callout li {
+    color: #B6C1CA;
+    margin: 6px 0;
+    padding-left: 2px;
+    font-size: .82rem;
+    line-height: 1.62;
+}
+.atlas-callout-info {
+    background: linear-gradient(90deg, rgba(32,87,82,.16), rgba(10,17,23,.96) 38%);
+    border-color: #1F3939;
+}
+.atlas-callout-info::before { background: var(--atlas-accent); }
+.atlas-callout-info .atlas-callout-title { color: #8CEBDD; }
+.atlas-callout-positive {
+    background: linear-gradient(90deg, rgba(25,77,55,.15), rgba(10,17,23,.96) 38%);
+    border-color: #1D392D;
+}
+.atlas-callout-positive::before { background: #52D68A; }
+.atlas-callout-positive .atlas-callout-title { color: #8DE7B1; }
+.atlas-callout-warning {
+    background: linear-gradient(90deg, rgba(92,70,23,.17), rgba(10,17,23,.97) 42%);
+    border-color: #40351D;
+}
+.atlas-callout-warning::before { background: #D7AE58; }
+.atlas-callout-warning .atlas-callout-title { color: #E9CA83; }
+.atlas-callout-neutral {
+    background: #0A1117;
+    border-color: #1A2A34;
+}
+.atlas-callout-neutral::before { background: #526473; }
+.atlas-callout-danger {
+    background: linear-gradient(90deg, rgba(95,35,46,.14), rgba(10,17,23,.97) 42%);
+    border-color: #432630;
+}
+.atlas-callout-danger::before { background: #E47B8E; }
+.atlas-callout-danger .atlas-callout-title { color: #F1A1AF; }
 
 [data-testid="stDataFrame"] {
     border: 1px solid var(--atlas-border) !important;
@@ -572,6 +689,20 @@ hr { border-color: var(--atlas-border-soft) !important; }
 .mobile-list-title { color:var(--atlas-text); font-size:1.1rem; font-weight:760; margin:18px 0 12px; }
 
 
+/* ---- V3.2.2 final detail ---- */
+[data-testid="stMetric"],
+.mobile-detail-card, .compare-card, .pulse-region-card, .home-top10-card,
+.atlas-radar-panel, .sector-spotlight-card, .sector-heatmap-mobile-card,
+.atlas-guide-card, .data-health-item, .saved-filter-card, .mobile-stock-card {
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.012);
+}
+[data-testid="stDataFrame"] { background: #080D11 !important; }
+.stButton > button:focus-visible, .stDownloadButton > button:focus-visible {
+    outline: 1px solid rgba(98,226,208,.45) !important;
+    outline-offset: 2px !important;
+}
+
+
 /* ---- V3.2.1 final polish ---- */
 .atlas-top-controls {
     display:flex;
@@ -625,6 +756,10 @@ hr { border-color: var(--atlas-border-soft) !important; }
     [data-testid="stMetricValue"] { font-size:1.25rem !important; }
     [data-testid="stMetricLabel"] { font-size:.69rem !important; }
     [data-testid="stHorizontalBlock"] { gap:.45rem; }
+    .atlas-callout { padding: 13px 14px 12px 15px; }
+    .atlas-callout-title { font-size: .80rem; }
+    .atlas-callout-body, .atlas-callout li { font-size: .78rem; }
+    [data-testid="stExpander"] details > summary { min-height: 40px; padding: 0 11px !important; }
     button { min-height:42px; }
 }
 
@@ -1950,7 +2085,7 @@ with st.expander("はじめに・データ状況"):
     st.caption("判定はAtlas Scoreを読みやすくするための目安です。データには遅延や一時的な取得失敗があり、売買を推奨するものではありません。")
 
 if st.session_state.atlas_setup_flash:
-    st.success(st.session_state.atlas_setup_flash)
+    _noir_callout("設定を復元しました", body=st.session_state.atlas_setup_flash, tone="positive")
     st.session_state.atlas_setup_flash = None
 
 with st.expander("設定を復元"):
@@ -1997,9 +2132,11 @@ with tabs[0]:
     p2.metric("プラス 3か月", f"{pulse['three_month_positive']} / {pulse['total']}")
     p3.metric("20日線より上", f"{pulse['above_sma20']} / {pulse['total']}")
     p4.metric("平均1か月", f"{pulse['avg_one_month']:+.2f}%")
-    pulse_box.info(
-        f"**市場状態: {pulse['label']}**\n\n"
-        f"{pulse['summary']}"
+    _noir_callout(
+        f"市場状態: {pulse['label']}",
+        body=pulse["summary"],
+        tone="info",
+        target=pulse_box,
     )
     pulse_box.caption(
         "市場状態は「1か月プラス銘柄の割合」「20日線より上の銘柄割合」「平均1か月騰落率」から整理しています。3か月プラス数は補助情報です。"
@@ -2437,15 +2574,8 @@ with tabs[2]:
     if not risk_points:
         risk_points.append("価格トレンドだけでは大きな警戒材料は確認されていません。")
 
-    st.info(
-        "### プラス材料\n\n"
-        + "\n\n".join(f"- {x}" for x in good_points)
-    )
-
-    st.warning(
-        "### チェックポイント\n\n"
-        + "\n\n".join(f"- {x}" for x in risk_points)
-    )
+    _noir_callout("プラス材料", lines=good_points, tone="positive")
+    _noir_callout("チェックポイント", lines=risk_points, tone="warning")
 
     is_favorite = t in st.session_state.favorites
     favorite_label = "ウォッチリストから解除" if is_favorite else "ウォッチリストに追加"
@@ -2470,14 +2600,12 @@ with tabs[2]:
     )
 
     if reasons:
-        st.info(
-            "### 注目ポイント\n\n"
-            + "\n\n".join(f"- {reason}" for reason in reasons)
-        )
+        _noir_callout("注目ポイント", lines=reasons, tone="info")
     else:
-        st.info(
-            "### 注目ポイント\n\n"
-            "- 現在は大きく目立つトレンドが少ない状態です。"
+        _noir_callout(
+            "注目ポイント",
+            lines=["現在は大きく目立つトレンドが少ない状態です。"],
+            tone="neutral",
         )
 
     _section_intro("NEWS", "最新ニュース & AI解説", "関連ニュースを最大3件表示します。AI解説はボタンを押した時だけ実行します。")
@@ -2517,7 +2645,11 @@ with tabs[2]:
             active_news_ai = st.session_state.news_ai_result
 
         if active_news_ai and not active_news_ai.get("ok", False):
-            st.warning("AI解説を一時的に取得できません。元のニュース見出しはそのまま確認できます。")
+            _noir_callout(
+                "AI解説を一時的に利用できません",
+                body="元のニュース見出しはそのまま確認できます。",
+                tone="warning",
+            )
 
         ai_items = active_news_ai.get("items", {}) if active_news_ai and active_news_ai.get("ok") else {}
 
@@ -2584,7 +2716,7 @@ with tabs[3]:
     )
 
     if len(compare_names) < 2:
-        st.info("比較する企業を2社以上選んでください。")
+        _noir_callout("比較する企業を2社以上選んでください", tone="neutral")
     else:
         compare_df = df[df["会社名"].isin(compare_names)].copy()
         compare_order = {name: i for i, name in enumerate(compare_names)}
@@ -2792,20 +2924,22 @@ with tabs[3]:
 
         if ai_result:
             if ai_result.get("ok", True):
-                st.success(
-                    "### 比較全体\n\n"
-                    + ai_result.get(
+                _noir_callout(
+                    "比較全体",
+                    body=ai_result.get(
                         "overview",
                         "選択した銘柄を、価格トレンドとAtlas Score構成要素で比較しました。",
-                    )
+                    ),
+                    tone="info",
                 )
             else:
-                st.warning(
-                    "### AI解説を利用できません\n\n"
-                    + ai_result.get(
+                _noir_callout(
+                    "AI解説を利用できません",
+                    body=ai_result.get(
                         "overview",
                         "通常の比較表とチャートはそのまま確認できます。",
-                    )
+                    ),
+                    tone="warning",
                 )
 
             company_notes = ai_result.get("company_notes", [])
@@ -2818,23 +2952,24 @@ with tabs[3]:
 
             key_differences = ai_result.get("key_differences", [])
             if key_differences:
-                st.info(
-                    "### 主な違い\n\n"
-                    + "\n".join(f"- {item}" for item in key_differences)
-                )
+                _noir_callout("主な違い", lines=key_differences, tone="info")
 
             watch_points = ai_result.get("watch_points", [])
             if watch_points:
-                st.warning(
-                    "### チェックポイント\n\n"
-                    + "\n".join(f"- {item}" for item in watch_points)
-                )
+                _noir_callout("チェックポイント", lines=watch_points, tone="warning")
 
             st.caption(
                 "AI解説はこの画面の価格トレンドとAtlas Scoreデータを整理したものです。投資助言や将来予測ではありません。"
             )
 
-        st.info("### 比較の見方\n\n- 短期だけで判断せず、1か月〜1年の流れを合わせて確認します。\n\n- Atlas Scoreは現在の価格トレンドを整理する学習・監視指標で、企業価値や将来の利益を保証するものではありません。")
+        _noir_callout(
+            "比較の見方",
+            lines=[
+                "短期だけで判断せず、1か月〜1年の流れを合わせて確認します。",
+                "Atlas Scoreは現在の価格トレンドを整理する学習・監視指標で、企業価値や将来の利益を保証するものではありません。",
+            ],
+            tone="neutral",
+        )
 
 
 # ------------------------------
@@ -2863,7 +2998,11 @@ with tabs[4]:
     favdf = df[df["Ticker"].isin(st.session_state.favorites)].copy()
 
     if favdf.empty:
-        st.info("個別分析から追加するか、上の「ウォッチリストを編集」から企業を選んでください。")
+        _noir_callout(
+            "ウォッチリストは空です",
+            body="個別分析から追加するか、上の「ウォッチリストを編集」から企業を選んでください。",
+            tone="neutral",
+        )
     else:
         fm1, fm2, fm3 = st.columns(3)
         fm1.metric("保存銘柄", f"{len(favdf)}")
@@ -2936,7 +3075,7 @@ with tabs[5]:
     st.caption("株数と平均取得単価を入力してください。外国株は現在の為替で円換算するため、評価額は目安です。")
 
     if st.session_state.portfolio_csv_flash:
-        st.success(st.session_state.portfolio_csv_flash)
+        _noir_callout("保有株データ", body=st.session_state.portfolio_csv_flash, tone="positive")
         st.session_state.portfolio_csv_flash = None
 
     edited = st.data_editor(
@@ -2998,7 +3137,11 @@ with tabs[5]:
         ])
 
     if skipped_portfolio:
-        st.warning("為替または円換算価格を取得できず、計算できない保有株があります: " + ", ".join(dict.fromkeys(skipped_portfolio)))
+        _noir_callout(
+            "計算できない保有株があります",
+            body="為替または円換算価格を取得できませんでした: " + ", ".join(dict.fromkeys(skipped_portfolio)),
+            tone="warning",
+        )
 
     if calc:
         pf = pd.DataFrame(
@@ -3182,7 +3325,11 @@ with tabs[6]:
                 },
             )
     else:
-        st.info("現在の予算で1株買える銘柄はありません。")
+        _noir_callout(
+            "条件に合う銘柄はありません",
+            body="現在の予算で1株買える銘柄はありません。",
+            tone="neutral",
+        )
 
 
 # ------------------------------
@@ -3192,7 +3339,7 @@ with tabs[7]:
     _section_intro("SCREENER", "条件で探す", "Score・騰落率・出来高・地域・移動平均線など、自分の条件で50銘柄を絞り込めます。")
 
     if st.session_state.watch_filter_flash:
-        st.success(st.session_state.watch_filter_flash)
+        _noir_callout("条件を更新しました", body=st.session_state.watch_filter_flash, tone="positive")
         st.session_state.watch_filter_flash = None
 
     st.markdown("### 保存した条件")
@@ -3356,7 +3503,11 @@ with tabs[7]:
     ).strip()
     if save_button_col.button("条件を保存", use_container_width=True, key="watch_save_button"):
         if not watch_save_name:
-            st.warning("保存する条件名を入力してください。")
+            _noir_callout(
+                "条件名が必要です",
+                body="保存する条件名を入力してください。",
+                tone="warning",
+            )
         else:
             saved_name = watch_save_name[:40]
             st.session_state.saved_watch_filters[saved_name] = _watch_config_from_state()
@@ -3405,7 +3556,11 @@ with tabs[7]:
     if only_above_sma60:
         active_conditions.append("60日線より上")
 
-    st.info("**現在の条件**  " + " | ".join(active_conditions))
+    _noir_callout(
+        "現在の条件",
+        body=" / ".join(active_conditions),
+        tone="info",
+    )
 
     r1, r2, r3, r4 = st.columns(4)
     r1.metric("条件一致", f"{len(watch_df)}")
@@ -3419,7 +3574,11 @@ with tabs[7]:
         r4.metric("最大出来高倍率", "-")
 
     if watch_df.empty:
-        st.warning("現在の条件に一致する銘柄はありません。条件を少し緩めてみてください。")
+        _noir_callout(
+            "条件一致なし",
+            body="現在の条件に一致する銘柄はありません。条件を少し緩めてみてください。",
+            tone="warning",
+        )
     else:
         st.caption(f"表示中: {len(watch_display_df)} / {len(watch_df)}社")
 
