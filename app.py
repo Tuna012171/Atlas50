@@ -13,8 +13,8 @@ from openai import OpenAI
 
 st.set_page_config(page_title="ATLAS 50", layout="wide", initial_sidebar_state="collapsed")
 
-APP_VERSION = "3.1"
-APP_LABEL = "NOIR"
+APP_VERSION = "3.2"
+APP_LABEL = "NOIR JP"
 AI_TIMEOUT_SECONDS = 20.0
 
 # ------------------------------
@@ -150,83 +150,51 @@ WATCH_SORT_OPTIONS = [
 
 
 # ------------------------------
-# UI language layer (English-only presentation)
-# Internal Japanese keys are intentionally retained for backward compatibility
-# with saved settings, CSV files and the established Atlas Score logic.
+# UI language layer (Japanese-first presentation)
+# Internal data keys remain Japanese for backward compatibility.
+# Short English kickers are intentionally kept as visual brand elements.
 # ------------------------------
-COUNTRY_EN = {
-    "米国": "United States", "オランダ": "Netherlands", "ドイツ": "Germany",
-    "デンマーク": "Denmark", "スイス": "Switzerland", "英国": "United Kingdom",
-    "フランス": "France", "台湾": "Taiwan", "中国": "China", "韓国": "South Korea",
-    "日本": "Japan", "インド": "India", "サウジアラビア": "Saudi Arabia",
-    "オーストラリア": "Australia", "英国/豪州": "UK / Australia", "カナダ": "Canada",
-    "ウルグアイ": "Uruguay", "シンガポール": "Singapore",
-}
-REGION_EN = {
-    "北米": "North America", "欧州": "Europe", "アジア": "Asia", "中東": "Middle East",
-    "オセアニア": "Oceania", "欧州・豪州": "Europe / Australia", "中南米": "Latin America",
-    "東南アジア": "Southeast Asia",
-}
-SECTOR_EN = {
-    "半導体": "Semiconductors", "テクノロジー": "Technology", "ソフトウェア": "Software",
-    "通信・広告": "Communications & Ads", "EC・クラウド": "E-commerce & Cloud",
-    "自動車": "Automotive", "金融": "Financials", "小売": "Retail", "医薬品": "Pharmaceuticals",
-    "銀行": "Banking", "エネルギー": "Energy", "ヘルスケア": "Healthcare", "決済": "Payments",
-    "半導体装置": "Semiconductor Equipment", "生活必需品": "Consumer Staples",
-    "高級消費財": "Luxury", "食品": "Food", "インターネット": "Internet",
-    "半導体・電子": "Semiconductors & Electronics", "電機・エンタメ": "Electronics & Entertainment",
-    "投資・通信": "Investments & Telecom", "FA・電子機器": "Industrial Automation",
-    "ITサービス": "IT Services", "複合・エネルギー": "Diversified & Energy", "資源": "Materials",
-    "ECソフトウェア": "E-commerce Software", "EC・フィンテック": "E-commerce & Fintech",
-    "EC・デジタル": "E-commerce & Digital", "情報サービス": "Information Services",
-}
-SECTOR_GROUP_EN = {
-    "半導体・電子": "Semiconductors & Electronics", "ソフトウェア・IT": "Software & IT",
-    "インターネット・EC": "Internet & E-commerce", "金融・決済": "Financials & Payments",
-    "ヘルスケア": "Healthcare", "消費・生活": "Consumer", "エネルギー・資源": "Energy & Materials",
-    "自動車・産業": "Automotive & Industrials", "テクノロジー・通信": "Technology & Communications",
-}
-SIGNAL_EN = {"強い＋": "STRONG", "＋": "POSITIVE", "様子見": "NEUTRAL", "－": "WEAK"}
+SIGNAL_EN = {"強い＋": "強い", "＋": "プラス", "様子見": "中立", "－": "弱い"}
 SCORE_PART_EN = {
-    "1週モメンタム": "1W Momentum", "1か月モメンタム": "1M Momentum",
-    "3か月モメンタム": "3M Momentum", "移動平均": "Moving Averages", "RSI": "RSI",
-    "出来高": "Volume", "52週高値": "52W High Position",
+    "1週モメンタム": "1週モメンタム", "1か月モメンタム": "1か月モメンタム",
+    "3か月モメンタム": "3か月モメンタム", "移動平均": "移動平均", "RSI": "RSI",
+    "出来高": "出来高", "52週高値": "52週高値との位置",
 }
 WATCH_SORT_EN = {
-    "Atlas Scoreが高い順": "Highest Atlas Score", "1か月上昇率が高い順": "Best 1M Return",
-    "3か月上昇率が高い順": "Best 3M Return", "出来高倍率が高い順": "Highest Volume Ratio",
+    "Atlas Scoreが高い順": "Atlas Scoreが高い順", "1か月上昇率が高い順": "1か月上昇率が高い順",
+    "3か月上昇率が高い順": "3か月上昇率が高い順", "出来高倍率が高い順": "出来高倍率が高い順",
 }
 WORLD_SORT_EN = {
-    "Atlas Scoreが高い順": "Highest Atlas Score", "1か月上昇率が高い順": "Best 1M Return",
-    "3か月上昇率が高い順": "Best 3M Return", "円換算価格が安い順": "Lowest JPY Price",
+    "Atlas Scoreが高い順": "Atlas Scoreが高い順", "1か月上昇率が高い順": "1か月上昇率が高い順",
+    "3か月上昇率が高い順": "3か月上昇率が高い順", "円換算価格が安い順": "円換算価格が安い順",
 }
 DISPLAY_COLUMN_NAMES = {
-    "順位": "Rank", "会社名": "Company", "国": "Country", "地域": "Region", "業種": "Sector",
-    "業種グループ": "Sector Group", "通貨": "Currency", "現在値": "Price", "円換算価格": "JPY Price",
-    "1日": "1D", "1週": "1W", "1か月": "1M", "3か月": "3M", "6か月": "6M", "1年": "1Y",
-    "出来高倍率": "Volume Ratio", "20日線比": "vs 20D MA", "60日線比": "vs 60D MA",
-    "高値乖離": "vs 52W High", "判定": "Signal", "最終日": "Latest Price Date",
-    "平均Score": "Avg Score", "銘柄数": "Stocks", "1か月平均": "Avg 1M", "3か月平均": "Avg 3M",
-    "6か月平均": "Avg 6M", "1か月プラス率": "Positive 1M %", "予算で買える株数": "Shares in Budget",
-    "株数": "Shares", "投資額(円)": "Cost (JPY)", "評価額(円)": "Value (JPY)",
-    "損益(円)": "P/L (JPY)", "損益率": "P/L %", "平均取得単価": "Avg Cost",
+    "順位": "順位", "会社名": "会社名", "国": "国", "地域": "地域", "業種": "業種",
+    "業種グループ": "業種グループ", "通貨": "通貨", "現在値": "現在値", "円換算価格": "円換算価格",
+    "1日": "1日", "1週": "1週", "1か月": "1か月", "3か月": "3か月", "6か月": "6か月", "1年": "1年",
+    "出来高倍率": "出来高倍率", "20日線比": "20日線比", "60日線比": "60日線比",
+    "高値乖離": "52週高値比", "判定": "判定", "最終日": "最新株価日",
+    "平均Score": "平均Score", "銘柄数": "銘柄数", "1か月平均": "1か月平均", "3か月平均": "3か月平均",
+    "6か月平均": "6か月平均", "1か月プラス率": "1か月プラス率", "予算で買える株数": "予算内株数",
+    "株数": "株数", "投資額(円)": "投資額(円)", "評価額(円)": "評価額(円)",
+    "損益(円)": "損益(円)", "損益率": "損益率", "平均取得単価": "平均取得単価",
 }
 
 
 def _country_en(value):
-    return COUNTRY_EN.get(str(value), str(value))
+    return str(value)
 
 
 def _region_en(value):
-    return REGION_EN.get(str(value), str(value))
+    return str(value)
 
 
 def _sector_en(value):
-    return SECTOR_EN.get(str(value), str(value))
+    return str(value)
 
 
 def _sector_group_en(value):
-    return SECTOR_GROUP_EN.get(str(value), str(value))
+    return str(value)
 
 
 def _signal_en(value):
@@ -234,20 +202,12 @@ def _signal_en(value):
 
 
 def _all_en(value):
-    return "All" if str(value) == "すべて" else str(value)
+    return "すべて" if str(value) == "すべて" else str(value)
 
 
 def _ui_frame(frame):
-    """Return a display-only English copy without changing internal data keys."""
+    """表示専用の日本語コピー。内部データの列名や値は変更しない。"""
     out = frame.copy()
-    if "国" in out.columns:
-        out["国"] = out["国"].map(_country_en)
-    if "地域" in out.columns:
-        out["地域"] = out["地域"].map(_region_en)
-    if "業種" in out.columns:
-        out["業種"] = out["業種"].map(_sector_en)
-    if "業種グループ" in out.columns:
-        out["業種グループ"] = out["業種グループ"].map(_sector_group_en)
     if "判定" in out.columns:
         out["判定"] = out["判定"].map(_signal_en)
     return out.rename(columns=DISPLAY_COLUMN_NAMES)
@@ -266,7 +226,6 @@ def _status_tone(signal):
     return {
         "強い＋": "positive", "＋": "positive", "様子見": "neutral", "－": "negative"
     }.get(str(signal), "neutral")
-
 
 # ------------------------------
 # 見た目
@@ -717,30 +676,31 @@ def _build_attention_reasons(
     one_year,
     has_news=False,
 ):
-    """Beginner-friendly interpretation of current price-trend data."""
+    """現在の価格トレンドを初心者向けに短く整理する。"""
     reasons = []
     if score >= 80:
-        reasons.append("Multiple trend signals are strong, placing this stock near the top of the Atlas universe right now.")
+        reasons.append("複数のトレンド指標が強く、現在はAtlas50の中でも注目度が高い状態です。")
     elif score >= 65:
-        reasons.append("Several trend signals are constructive, giving this stock an above-average Atlas Score.")
+        reasons.append("複数のトレンド指標が比較的良好で、Atlas Scoreは平均より高めです。")
 
     trend_values = [one_month, three_month, six_month, one_year]
     if all(v is not None and v > 0 for v in trend_values):
-        reasons.append("Returns are positive from 1 month through 1 year, so strength is visible across several time horizons.")
+        reasons.append("1か月から1年まで騰落率がすべてプラスで、複数の期間で上向きの流れが見られます。")
     elif one_month is not None and three_month is not None and six_month is not None and one_month > 0 and three_month > 0 and six_month > 0:
-        reasons.append("The 1M, 3M and 6M trends are all positive, showing consistent medium-term momentum.")
+        reasons.append("1か月・3か月・6か月がすべてプラスで、中期的な上向きの流れが続いています。")
     elif one_month is not None and three_month is not None and one_month > 0 and three_month < 0:
-        reasons.append("The stock has bounced over the last month, but the 3M trend is still recovering.")
+        reasons.append("直近1か月は反発していますが、3か月ではまだ回復途中の動きです。")
     elif one_month is not None and six_month is not None and one_year is not None and one_month < 0 and six_month > 0 and one_year > 0:
-        reasons.append("The longer-term trend remains positive, while the latest month shows a pullback.")
+        reasons.append("中長期ではプラスですが、直近1か月は調整局面に入っています。")
     elif one_month is not None and three_month is not None and one_month < 0 and three_month < 0:
-        reasons.append("Both 1M and 3M returns are negative, so short-to-medium-term momentum is currently soft.")
+        reasons.append("1か月・3か月ともにマイナスで、短期から中期の勢いは弱めです。")
 
     if one_month is not None and abs(one_month) >= 15:
-        reasons.append("The 1M move is unusually large, so short-term volatility deserves extra attention.")
+        reasons.append("直近1か月の値動きが大きいため、短期的な価格変動には注意が必要です。")
     if has_news:
-        reasons.append("Recent related news is available, which can help explain what the market is reacting to.")
+        reasons.append("関連ニュースも出ているため、値動きの背景とあわせて確認できます。")
     return reasons[:5]
+
 
 
 SCORE_PART_MAX = {
@@ -755,18 +715,18 @@ SCORE_PART_MAX = {
 
 
 def _build_ranking_explanation(row, full_df):
-    """Explain ranking using Atlas data only, in beginner-friendly English."""
+    """Atlasデータだけを使って現在順位の背景を初心者向けに説明する。"""
     rank = int(row["順位"])
     score = float(row["Atlas Score"])
     parts = row.get("Score内訳", {}) or {}
     part_messages = {
-        "1週モメンタム": "Recent 1-week momentum is contributing to the score.",
-        "1か月モメンタム": "The 1-month trend is a meaningful contributor to the score.",
-        "3か月モメンタム": "The 3-month trend is supporting the current ranking.",
-        "移動平均": "The moving-average structure is contributing strongly to the medium-term trend score.",
-        "RSI": "RSI is sitting in a range that Atlas treats as relatively balanced momentum.",
-        "出来高": "Recent trading volume is adding to the momentum signal.",
-        "52週高値": "The price is relatively close to its 52-week high, which supports the price-position score.",
+        "1週モメンタム": "直近1週間の勢いがScoreを押し上げています。",
+        "1か月モメンタム": "1か月の値動きが現在のScoreに大きく寄与しています。",
+        "3か月モメンタム": "3か月のトレンドが現在の順位を支えています。",
+        "移動平均": "移動平均線の並びが良く、中期トレンド面の得点が高めです。",
+        "RSI": "RSIがAtlas上で比較的バランスの良い範囲にあります。",
+        "出来高": "最近の出来高が勢いの指標を支えています。",
+        "52週高値": "52週高値に比較的近く、価格位置の強さがScoreに反映されています。",
     }
     normalized_parts=[]
     for name,max_value in SCORE_PART_MAX.items():
@@ -780,7 +740,7 @@ def _build_ranking_explanation(row, full_df):
         strengths.append(part_messages[name])
         if len(strengths)>=2: break
     if not strengths:
-        strengths.append("No single factor dominates; the ranking comes from the combined Atlas Score components.")
+        strengths.append("特定の1項目ではなく、複数のAtlas Score構成要素の合計で現在の順位になっています。")
 
     def pct_value(col):
         value=row.get(col)
@@ -788,42 +748,43 @@ def _build_ranking_explanation(row, full_df):
     one_month=pct_value("1か月"); three_month=pct_value("3か月"); six_month=pct_value("6か月"); one_year=pct_value("1年")
     vals=[one_month,three_month,six_month,one_year]
     if all(v is not None and v>0 for v in vals):
-        trend="Returns are positive across 1M, 3M, 6M and 1Y, so the trend is aligned across multiple horizons."
+        trend="1か月・3か月・6か月・1年がすべてプラスで、複数期間の方向がそろっています。"
     elif all(v is not None and v<0 for v in vals):
-        trend="Returns are negative across 1M, 3M, 6M and 1Y, showing broad weakness across time horizons."
+        trend="1か月・3か月・6か月・1年がすべてマイナスで、複数期間に弱さが見られます。"
     elif one_month is not None and three_month is not None and six_month is not None and one_month>0 and three_month>0 and six_month>0:
-        trend="The 1M, 3M and 6M returns are all positive, indicating consistent medium-term strength."
+        trend="1か月・3か月・6か月がすべてプラスで、中期的に上向きの流れです。"
     elif one_month is not None and six_month is not None and one_year is not None and one_month<0 and six_month>0 and one_year>0:
-        trend="The longer-term trend is positive, but the latest month shows a pullback."
+        trend="中長期はプラスですが、直近1か月は調整しています。"
     elif one_month is not None and three_month is not None and one_month>0 and three_month<0:
-        trend="The stock has rebounded over 1M, while the 3M return remains negative."
+        trend="直近1か月は反発していますが、3か月ではまだマイナスです。"
     elif one_month is not None and three_month is not None and one_month<0 and three_month<0:
-        trend="Both 1M and 3M returns are negative, so near-term momentum is currently weak."
+        trend="1か月・3か月ともにマイナスで、足元の勢いは弱めです。"
     else:
-        trend="The time horizons are mixed, so short-term and longer-term trends are not fully aligned."
+        trend="期間によって強弱が分かれており、短期と中長期の方向はまだそろっていません。"
 
-    position_bits=[f"Atlas Score {score:.1f}, ranked #{rank} out of {len(full_df)} stocks."]
+    position_bits=[f"Atlas Score {score:.1f}で、50銘柄中 #{rank} です。"]
     if rank>1 and len(full_df)>=rank-1:
-        upper=float(full_df.iloc[rank-2]["Atlas Score"]); position_bits.append(f"The stock above is {upper-score:.1f} points ahead.")
+        upper=float(full_df.iloc[rank-2]["Atlas Score"]); position_bits.append(f"1つ上とは {upper-score:.1f}pt差です。")
     if rank<len(full_df):
-        lower=float(full_df.iloc[rank]["Atlas Score"]); position_bits.append(f"It leads the stock below by {score-lower:.1f} points.")
+        lower=float(full_df.iloc[rank]["Atlas Score"]); position_bits.append(f"1つ下には {score-lower:.1f}ptリードしています。")
     checks=[]
     if one_month is not None and abs(one_month)>=15:
-        checks.append("The 1M move is large, so short-term volatility is elevated.")
+        checks.append("1か月の値動きが大きく、短期的な変動が強まっています。")
     rsi=row.get("RSI")
     if pd.notna(rsi):
         rsi=float(rsi)
-        if rsi>=75: checks.append("RSI is high, so watch for signs of short-term overheating.")
-        elif rsi<=35: checks.append("RSI is low, so weak momentum may still be present.")
+        if rsi>=75: checks.append("RSIが高めのため、短期的な過熱感が出ていないか確認したい状態です。")
+        elif rsi<=35: checks.append("RSIが低めで、弱い勢いが続いている可能性があります。")
     volume_ratio=row.get("出来高倍率")
     if pd.notna(volume_ratio) and float(volume_ratio)<0.8:
-        checks.append("Volume is below its 20-day average, so recent moves have less participation behind them.")
+        checks.append("出来高が20日平均を下回っており、最近の値動きへの参加はやや少なめです。")
     high_gap=row.get("高値乖離")
     if pd.notna(high_gap) and float(high_gap)<-0.15:
-        checks.append("The price remains well below its 52-week high, which signals a weaker price position.")
+        checks.append("52週高値から距離があり、価格位置はまだ弱めです。")
     if not checks:
-        checks.append("No major warning stands out in the Atlas inputs, but a high rank is not a forecast of future gains.")
+        checks.append("Atlasの入力値では大きな警戒サインは目立ちませんが、高順位でも将来の上昇を保証するものではありません。")
     return {"rank":rank,"score":score,"position":" ".join(position_bits),"strengths":strengths,"trend":trend,"checks":checks[:2]}
+
 
 
 def _build_atlas_pulse(full_df):
@@ -849,17 +810,17 @@ def _build_atlas_pulse(full_df):
     breadth = (breadth_1m + breadth_sma20) / 2
 
     if breadth >= 0.65 and avg_one_month > 0:
-        label = "BROADLY POSITIVE"
+        label = "全体に上向き"
         icon = ""
-        summary = "Strength is relatively broad: many stocks are positive over 1M and trading above their 20-day moving average."
+        summary = "1か月プラスの銘柄と20日線より上の銘柄が多く、Atlas50全体に強さが広がっています。"
     elif breadth <= 0.35 and avg_one_month < 0:
-        label = "BROADLY WEAK"
+        label = "全体に弱め"
         icon = ""
-        summary = "Breadth is weak: fewer stocks are positive over 1M or trading above their 20-day moving average."
+        summary = "1か月プラスの銘柄や20日線より上の銘柄が少なく、Atlas50全体では弱さが目立ちます。"
     else:
-        label = "MIXED"
+        label = "強弱が混在"
         icon = ""
-        summary = "The universe is mixed, with strength and weakness spread across different stocks rather than one clear direction."
+        summary = "上向きの銘柄と弱い銘柄が混在しており、Atlas50全体では方向感がそろっていません。"
 
     region = (
         data.groupby("地域", dropna=False)
@@ -888,6 +849,7 @@ def _build_atlas_pulse(full_df):
         "summary": summary,
         "region": region,
     }
+
 
 
 def _build_atlas_radar(full_df):
@@ -1019,13 +981,13 @@ def _render_sector_heatmap_html(summary, heat_frame):
         return ""
 
     metric_order = ["1か月", "3か月", "6か月", "Atlas Score"]
-    metric_label = {"1か月": "1M", "3か月": "3M", "6か月": "6M", "Atlas Score": "ATLAS SCORE"}
+    metric_label = {"1か月": "1か月", "3か月": "3か月", "6か月": "6か月", "Atlas Score": "ATLAS SCORE"}
     heat_lookup = {}
     for _, heat_row in heat_frame.iterrows():
         heat_lookup[(str(heat_row["業種グループ"]), str(heat_row["指標"]))] = heat_row
 
     desktop_parts = ['<div class="sector-heatmap-desktop">']
-    desktop_parts.append('<div class="sector-heatmap-header">SECTOR GROUP</div>')
+    desktop_parts.append('<div class="sector-heatmap-header">業種グループ</div>')
     for metric in metric_order:
         desktop_parts.append(f'<div class="sector-heatmap-header">{html.escape(metric_label[metric])}</div>')
 
@@ -1040,7 +1002,7 @@ def _render_sector_heatmap_html(summary, heat_frame):
         desktop_parts.append(
             '<div class="sector-heatmap-sector">'
             f'<div class="sector-heatmap-sector-name">{sector_escaped}</div>'
-            f'<div class="sector-heatmap-sector-meta">{count} stocks | {breadth:.0f}% positive over 1M</div>'
+            f'<div class="sector-heatmap-sector-meta">{count}銘柄 | 1か月プラス {breadth:.0f}%</div>'
             '</div>'
         )
 
@@ -1048,9 +1010,9 @@ def _render_sector_heatmap_html(summary, heat_frame):
             '<div class="sector-heatmap-mobile-card">'
             '<div class="sector-heatmap-mobile-head">'
             f'<div class="sector-heatmap-mobile-name">{sector_escaped}</div>'
-            f'<div class="sector-heatmap-mobile-meta">{count} stocks</div>'
+            f'<div class="sector-heatmap-mobile-meta">{count}銘柄</div>'
             '</div>'
-            f'<div class="sector-heatmap-sector-meta">{breadth:.0f}% positive over 1M</div>'
+            f'<div class="sector-heatmap-sector-meta">1か月プラス {breadth:.0f}%</div>'
             '<div class="sector-heatmap-mobile-grid">'
         )
 
@@ -1165,17 +1127,17 @@ def _apply_watch_config(config):
 
 def _watch_config_summary(config):
     if not isinstance(config, dict):
-        return "Unable to read this filter"
+        return "この条件を読み込めません"
     bits = [f"Score ≥ {float(config.get('watch_score', 0)):.0f}"]
     one_m = float(config.get("watch_1m", -100))
     three_m = float(config.get("watch_3m", -100))
     volume = float(config.get("watch_volume", 0))
     if one_m > -100:
-        bits.append(f"1M ≥ {one_m:+.0f}%")
+        bits.append(f"1か月 ≥ {one_m:+.0f}%")
     if three_m > -100:
-        bits.append(f"3M ≥ {three_m:+.0f}%")
+        bits.append(f"3か月 ≥ {three_m:+.0f}%")
     if volume > 0:
-        bits.append(f"Volume ≥ {volume:.1f}x")
+        bits.append(f"出来高 ≥ {volume:.1f}x")
     region = str(config.get("watch_region", "すべて"))
     sector = str(config.get("watch_sector_group", "すべて"))
     if region != "すべて":
@@ -1183,9 +1145,9 @@ def _watch_config_summary(config):
     if sector != "すべて":
         bits.append(_sector_group_en(sector))
     if bool(config.get("watch_sma20", False)):
-        bits.append("Above 20D MA")
+        bits.append("20日線より上")
     if bool(config.get("watch_sma60", False)):
-        bits.append("Above 60D MA")
+        bits.append("60日線より上")
     return " | ".join(bits)
 
 
@@ -1614,7 +1576,7 @@ def load_news(ticker, company_name=""):
                 {
                     "title": title,
                     "summary": summary,
-                    "publisher": publisher or "News",
+                    "publisher": publisher or "ニュース",
                     "link": link,
                 }
             )
@@ -1644,33 +1606,33 @@ def analyze_news_batch_with_ai(company_name, news_payload_json):
         )
 
         prompt = f"""
-You are the beginner-friendly news explainer inside ATLAS 50.
-Company: {company_name}
+あなたはATLAS 50の初心者向けニュース解説AIです。
+対象企業: {company_name}
 
-Use only the following news items. Explain each one in clear, simple English.
+以下のニュースだけを使い、初心者にも分かる自然な日本語で整理してください。
 News:
 {json.dumps(payload, ensure_ascii=False, separators=(",", ":"))}
 
-Return JSON only.
+JSONだけを返してください。
 {{
   "items": [
     {{
       "index": 0,
-      "title_ja": "Short plain-English headline",
-      "summary": "Explain what the news means in no more than two simple sentences",
-      "impact": "TAILWIND, NEUTRAL, or RISK"
+      "title_ja": "初心者にも分かる短い日本語タイトル",
+      "summary": "ニュースの意味を専門用語をできるだけ使わず2文以内で説明",
+      "impact": "TAILWIND, NEUTRAL, RISK のいずれか"
     }}
   ]
 }}
 
-Rules:
-- Do not invent facts that are not in the supplied headline or summary
-- Do not infer earnings, future results, or other missing information
-- Do not give buy, sell, or investment recommendations
-- Use NEUTRAL if directional impact is unclear
-- Avoid certainty and jargon
-- Keep each input index unchanged
-- Write concise natural English
+ルール:
+- supplied headline / summary にない事実を作らない
+- 決算、将来業績、その他不足情報を推測しない
+- 買い・売りなどの投資推奨をしない
+- 方向性が分からない場合は中立
+- 断定しすぎず、専門用語を避ける
+- indexは変えない
+- 簡潔で自然な日本語で書く
 """
 
         response = client.responses.create(
@@ -1694,12 +1656,12 @@ Rules:
                 continue
             if idx < 0 or idx >= len(payload):
                 continue
-            impact = str(item.get("impact", "NEUTRAL")).strip().upper()
-            if impact not in {"TAILWIND", "NEUTRAL", "RISK"}:
-                impact = "NEUTRAL"
+            impact = str(item.get("impact", "中立")).strip().upper()
+            if impact not in {"TAILWIND", "中立", "RISK"}:
+                impact = "中立"
             cleaned[idx] = {
-                "title_ja": str(item.get("title_ja") or payload[idx].get("title") or "News").strip(),
-                "summary": str(item.get("summary") or "AI explanation was unavailable.").strip(),
+                "title_ja": str(item.get("title_ja") or payload[idx].get("title") or "ニュース").strip(),
+                "summary": str(item.get("summary") or "AI解説を取得できませんでした。").strip(),
                 "impact": impact,
             }
 
@@ -1731,38 +1693,38 @@ def analyze_comparison_with_ai(compare_payload_json):
         )
 
         prompt = f"""
-You are the beginner-friendly comparison explainer inside ATLAS 50.
-Use only the comparison data below and explain the differences in clear English.
+あなたはATLAS 50の初心者向け比較解説AIです。
+以下の比較データだけを使い、違いを分かりやすい日本語で整理してください。
 
 Comparison data:
 {json.dumps(compare_payload, ensure_ascii=False, separators=(",", ":"))}
 
-Return JSON only.
+JSONだけを返してください。
 
 {{
-  "overview": "Summarize the comparison in no more than two sentences",
+  "overview": "比較全体を2文以内で要約",
   "company_notes": [
-    {{"company": "Company name", "note": "One or two sentences describing what this data shows"}}
+    {{"company": "会社名", "note": "このデータから見える特徴を1〜2文で説明"}}
   ],
   "key_differences": [
-    "A meaningful difference visible in the supplied data",
-    "Another meaningful difference"
+    "入力データから確認できる重要な違い",
+    "もう1つの重要な違い"
   ],
   "watch_points": [
-    "A useful point to keep in mind when comparing these stocks"
+    "比較するときに確認したいポイント"
   ]
 }}
 
-Rules:
-- Use only the supplied numbers and Atlas Score components
-- Do not infer earnings, valuation, news, future results, or missing information
-- Do not recommend buying, selling, or choosing one company over another
-- Explain differences by time horizon and score component rather than declaring a winner
-- Do not treat past returns as a forecast
-- Treat Atlas Score as a monitoring and learning indicator
-- Maximum 3 key differences and 3 watch points
-- Include one company note for every supplied company
-- Use concise beginner-friendly English
+ルール:
+- 与えられた数値とAtlas Score構成要素だけを使う
+- 決算、企業価値、ニュース、将来業績、不足情報を推測しない
+- 買い・売り・どちらを選ぶべきかの推奨をしない
+- 勝敗ではなく、期間別の値動きとScore構成の違いを説明する
+- 過去リターンを将来予測として扱わない
+- Atlas Scoreは学習・監視指標として扱う
+- 主な違いと確認ポイントは最大3件
+- すべての企業についてcompany_notesを1件ずつ作る
+- 初心者にも読みやすい簡潔な日本語で書く
 """
 
         response = client.responses.create(
@@ -1806,7 +1768,7 @@ Rules:
 
         return {
             "ok": True,
-            "overview": overview or "The selected stocks were compared using price trends and Atlas Score components.",
+            "overview": overview or "選択した銘柄を、価格トレンドとAtlas Score構成要素で比較しました。",
             "company_notes": cleaned_notes,
             "key_differences": [str(x).strip() for x in key_differences[:3] if str(x).strip()],
             "watch_points": [str(x).strip() for x in watch_points[:3] if str(x).strip()],
@@ -1815,10 +1777,10 @@ Rules:
     except Exception as e:
         return {
             "ok": False,
-            "overview": "AI comparison is temporarily unavailable. The standard comparison table and charts are still available.",
+            "overview": "AI比較は一時的に利用できません。通常の比較表とチャートはそのまま確認できます。",
             "company_notes": [],
             "key_differences": [],
-            "watch_points": ["The AI request timed out or was temporarily unavailable. Please try again."],
+            "watch_points": ["AIの応答がタイムアウトしたか、一時的に利用できませんでした。時間をおいて再度お試しください。"],
             "error_type": type(e).__name__,
         }
 
@@ -1880,32 +1842,32 @@ st.markdown(
     '<div class="atlas-hero">'
     '<div class="atlas-wordmark"><div class="atlas-title">ATLAS 50</div><span class="atlas-title-mark"></span></div>'
     '<div class="atlas-sub">GLOBAL EQUITY INTELLIGENCE</div>'
-    '<div class="atlas-tagline">A focused view of 50 global companies. See market breadth, momentum, comparisons and watch conditions without the noise.</div>'
+    '<div class="atlas-tagline">世界50社の動きを、余計な情報を減らしてシンプルに。全体感・勢い・比較・監視条件をひとつの画面で確認できます。</div>'
     '</div>',
     unsafe_allow_html=True,
 )
 st.markdown(
     f'<div class="atlas-version-row">'
     f'<span class="atlas-chip">V{APP_VERSION} {APP_LABEL}</span>'
-    f'<span class="atlas-chip">MONITORING / LEARNING</span>'
-    f'<span class="atlas-chip">50 GLOBAL STOCKS</span>'
+    f'<span class="atlas-chip">学習・モニタリング</span>'
+    f'<span class="atlas-chip">世界50銘柄</span>'
     f'</div>',
     unsafe_allow_html=True,
 )
 
-if st.button("Refresh market data", key="refresh_market_data"):
+if st.button("市場データを再取得", key="refresh_market_data"):
     load_data.clear()
     load_fx.clear()
     load_news.clear()
     st.rerun()
 
-with st.spinner("Loading market data and FX rates..."):
+with st.spinner("株価と為替データを読み込み中..."):
     df, histories, errors = load_data()
     fx = load_fx()
 
 if df.empty:
-    st.error("Market data could not be loaded. Try refreshing the data.")
-    with st.expander("Error details"):
+    st.error("株価データを取得できませんでした。市場データの再取得をお試しください。")
+    with st.expander("エラー詳細"):
         st.code("\n".join(errors[:50]))
     st.stop()
 
@@ -1913,45 +1875,45 @@ df["FX→JPY"] = df["通貨"].map(fx)
 df["円換算価格"] = df["現在値"] * df["FX→JPY"]
 data_health = _build_data_health(df, fx, errors)
 
-with st.expander("Start here / Data status"):
+with st.expander("はじめに / データ状況"):
     st.markdown(
         '<div class="atlas-guide-grid">'
-        '<div class="atlas-guide-card"><div class="atlas-guide-step">STEP 1</div><div class="atlas-guide-title">Read the market</div><div class="atlas-guide-text">Use Pulse, Radar and the sector map to understand the current backdrop.</div></div>'
-        '<div class="atlas-guide-card"><div class="atlas-guide-step">STEP 2</div><div class="atlas-guide-title">Open a stock</div><div class="atlas-guide-text">Review returns, Atlas Score components, charts and relevant news.</div></div>'
-        '<div class="atlas-guide-card"><div class="atlas-guide-step">STEP 3</div><div class="atlas-guide-title">Compare</div><div class="atlas-guide-text">Put 2–4 stocks side by side using the same trend framework.</div></div>'
-        '<div class="atlas-guide-card"><div class="atlas-guide-step">STEP 4</div><div class="atlas-guide-title">Build a screen</div><div class="atlas-guide-text">Filter the 50-stock universe and save conditions you want to revisit.</div></div>'
+        '<div class="atlas-guide-card"><div class="atlas-guide-step">STEP 1</div><div class="atlas-guide-title">市場全体を見る</div><div class="atlas-guide-text">Pulse・Radar・業種マップで、まず市場全体の状態を確認します。</div></div>'
+        '<div class="atlas-guide-card"><div class="atlas-guide-step">STEP 2</div><div class="atlas-guide-title">銘柄を見る</div><div class="atlas-guide-text">騰落率・Atlas Score・チャート・関連ニュースをまとめて確認します。</div></div>'
+        '<div class="atlas-guide-card"><div class="atlas-guide-step">STEP 3</div><div class="atlas-guide-title">比較する</div><div class="atlas-guide-text">2〜4銘柄を同じ基準で並べて違いを確認します。</div></div>'
+        '<div class="atlas-guide-card"><div class="atlas-guide-step">STEP 4</div><div class="atlas-guide-title">条件で探す</div><div class="atlas-guide-text">50銘柄から条件を絞り、あとで使いたい条件を保存できます。</div></div>'
         '</div>',
         unsafe_allow_html=True,
     )
-    missing_fx_text = "None" if not data_health["missing_fx"] else " / ".join(data_health["missing_fx"])
+    missing_fx_text = "なし" if not data_health["missing_fx"] else " / ".join(data_health["missing_fx"])
     st.markdown(
         '<div class="data-health-grid">'
-        f'<div class="data-health-item"><div class="data-health-label">Stocks loaded</div><div class="data-health-value">{data_health["loaded"]} / {data_health["expected"]}</div></div>'
-        f'<div class="data-health-item"><div class="data-health-label">Latest price date</div><div class="data-health-value">{html.escape(data_health["latest"])}</div></div>'
-        f'<div class="data-health-item"><div class="data-health-label">Missing FX</div><div class="data-health-value">{html.escape(missing_fx_text)}</div></div>'
-        f'<div class="data-health-item"><div class="data-health-label">Load errors</div><div class="data-health-value">{len(data_health["errors"])}</div></div>'
+        f'<div class="data-health-item"><div class="data-health-label">取得銘柄</div><div class="data-health-value">{data_health["loaded"]} / {data_health["expected"]}</div></div>'
+        f'<div class="data-health-item"><div class="data-health-label">最新株価日</div><div class="data-health-value">{html.escape(data_health["latest"])}</div></div>'
+        f'<div class="data-health-item"><div class="data-health-label">為替未取得</div><div class="data-health-value">{html.escape(missing_fx_text)}</div></div>'
+        f'<div class="data-health-item"><div class="data-health-label">取得エラー</div><div class="data-health-value">{len(data_health["errors"])}</div></div>'
         '</div>',
         unsafe_allow_html=True,
     )
     st.markdown(
         '<div class="atlas-version-row" style="margin-top:12px;margin-bottom:7px">'
-        '<span class="atlas-chip">STRONG 75+</span>'
-        '<span class="atlas-chip">POSITIVE 60–74.9</span>'
-        '<span class="atlas-chip">NEUTRAL 45–59.9</span>'
-        '<span class="atlas-chip">WEAK &lt;45</span>'
+        '<span class="atlas-chip">強い 75+</span>'
+        '<span class="atlas-chip">プラス 60–74.9</span>'
+        '<span class="atlas-chip">中立 45–59.9</span>'
+        '<span class="atlas-chip">弱い &lt;45</span>'
         '</div>',
         unsafe_allow_html=True,
     )
-    st.caption("Signal labels are a simple reading guide for Atlas Score. Data can be delayed or temporarily unavailable, and no signal is a buy or sell recommendation.")
+    st.caption("判定はAtlas Scoreを読みやすくするための目安です。データには遅延や一時的な取得失敗があり、売買を推奨するものではありません。")
 
 if st.session_state.atlas_setup_flash:
     st.success(st.session_state.atlas_setup_flash)
     st.session_state.atlas_setup_flash = None
 
-with st.expander("Restore ATLAS settings"):
-    st.caption("Restore your watchlist, portfolio and saved screens from an ATLAS settings JSON file.")
+with st.expander("ATLAS設定を復元"):
+    st.caption("ウォッチリスト・保有株・保存した条件をATLAS設定JSONから復元できます。")
     atlas_setup_upload_global = st.file_uploader(
-        "Upload ATLAS settings JSON",
+        "ATLAS設定JSONを読み込む",
         type=["json"],
         key="atlas_setup_upload_global",
     )
@@ -1963,12 +1925,12 @@ with st.expander("Restore ATLAS settings"):
                 setup_payload = json.loads(setup_bytes.decode("utf-8"))
                 _apply_atlas_setup_payload(setup_payload)
                 st.session_state.atlas_setup_digest = setup_digest
-                st.session_state.atlas_setup_flash = "ATLAS settings restored."
+                st.session_state.atlas_setup_flash = "ATLAS設定を復元しました。"
                 st.rerun()
         except Exception:
-            st.error("The ATLAS settings file could not be read.")
+            st.error("ATLAS設定ファイルを読み込めませんでした。")
 
-tabs = st.tabs(["OVERVIEW", "MARKETS", "STOCK", "COMPARE", "WATCHLIST", "PORTFOLIO", "BUDGET", "SCREENER"])
+tabs = st.tabs(["ホーム", "世界50", "個別分析", "比較", "ウォッチリスト", "保有株", "予算", "条件検索"])
 
 
 # ------------------------------
@@ -1977,30 +1939,30 @@ tabs = st.tabs(["OVERVIEW", "MARKETS", "STOCK", "COMPARE", "WATCHLIST", "PORTFOL
 with tabs[0]:
     a, b, c, d, e = st.columns(5)
 
-    a.metric("UNIVERSE", f"{len(df)} / 50")
-    b.metric("STRONG", int((df["判定"] == "強い＋").sum()))
-    c.metric("POSITIVE", int((df["判定"] == "＋").sum()))
-    d.metric("AVG ATLAS SCORE", f'{df["Atlas Score"].mean():.1f}')
-    e.metric("LATEST PRICE DATE", str(df["最終日"].max()))
+    a.metric("対象銘柄", f"{len(df)} / 50")
+    b.metric("強い", int((df["判定"] == "強い＋").sum()))
+    c.metric("プラス", int((df["判定"] == "＋").sum()))
+    d.metric("平均Atlas Score", f'{df["Atlas Score"].mean():.1f}')
+    e.metric("最新株価日", str(df["最終日"].max()))
 
     pulse = _build_atlas_pulse(df)
-    _section_intro("MARKET BREADTH", "Atlas Pulse", "A snapshot of how widely strength or weakness is spread across the 50-stock universe.")
+    _section_intro("MARKET BREADTH", "市場全体の広がり", "50銘柄の中で、強さや弱さがどれくらい広がっているかを確認します。")
 
     pulse_box = st.container(border=True)
     p1, p2, p3, p4 = pulse_box.columns(4)
-    p1.metric("POSITIVE 1M", f"{pulse['one_month_positive']} / {pulse['total']}")
-    p2.metric("POSITIVE 3M", f"{pulse['three_month_positive']} / {pulse['total']}")
-    p3.metric("ABOVE 20D MA", f"{pulse['above_sma20']} / {pulse['total']}")
-    p4.metric("AVG 1M RETURN", f"{pulse['avg_one_month']:+.2f}%")
+    p1.metric("プラス 1か月", f"{pulse['one_month_positive']} / {pulse['total']}")
+    p2.metric("プラス 3か月", f"{pulse['three_month_positive']} / {pulse['total']}")
+    p3.metric("20日線より上", f"{pulse['above_sma20']} / {pulse['total']}")
+    p4.metric("平均1か月", f"{pulse['avg_one_month']:+.2f}%")
     pulse_box.info(
-        f"**MARKET STATE: {pulse['label']}**\n\n"
+        f"**市場状態: {pulse['label']}**\n\n"
         f"{pulse['summary']}"
     )
     pulse_box.caption(
-        "Market state combines the share of stocks with positive 1M returns, the share above the 20-day moving average, and the universe average 1M return. The 3M count is supporting context."
+        "市場状態は「1か月プラス銘柄の割合」「20日線より上の銘柄割合」「平均1か月騰落率」から整理しています。3か月プラス数は補助情報です。"
     )
 
-    with st.expander("Regional breakdown"):
+    with st.expander("地域別の状態を見る"):
         region_show = pulse["region"].copy()
 
         region_table = st.container(key="pulse_region_table")
@@ -2009,11 +1971,11 @@ with tabs[0]:
             use_container_width=True,
             hide_index=True,
             column_config={
-                "Avg Score": st.column_config.ProgressColumn(
+                "平均Score": st.column_config.ProgressColumn(
                     min_value=0, max_value=100, format="%.1f"
                 ),
-                "Avg 1M": st.column_config.NumberColumn(format="%.2f%%"),
-                "Avg 3M": st.column_config.NumberColumn(format="%.2f%%"),
+                "1か月平均": st.column_config.NumberColumn(format="%.2f%%"),
+                "3か月平均": st.column_config.NumberColumn(format="%.2f%%"),
             },
         )
 
@@ -2029,19 +1991,19 @@ with tabs[0]:
                 f'<div class="pulse-region-card">'
                 f'<div class="pulse-region-head">'
                 f'<div class="pulse-region-name">{html.escape(region_name)}</div>'
-                f'<div class="pulse-region-count">{region_count} stocks</div>'
+                f'<div class="pulse-region-count">{region_count}銘柄</div>'
                 f'</div>'
-                f'<div class="pulse-region-score">Average Atlas Score {region_score:.1f}</div>'
+                f'<div class="pulse-region-score">平均Atlas Score {region_score:.1f}</div>'
                 f'<div class="pulse-region-stats">'
-                f'Average 1M {region_1m:+.2f}% | Average 3M {region_3m:+.2f}%'
+                f'1か月平均 {region_1m:+.2f}% | 3か月平均 {region_3m:+.2f}%'
                 f'</div>'
                 f'</div>'
             )
         region_mobile.markdown(region_cards, unsafe_allow_html=True)
 
-        st.caption("Regional averages use only stocks inside ATLAS 50; they are not regional market indices.")
+        st.caption("地域別の平均はATLAS 50に含まれる銘柄だけの集計です。地域市場全体の指数ではありません。")
 
-    _section_intro("MARKET MOVERS", "Atlas Radar", "See which stocks stand out for recent price movement or trading-volume activity.")
+    _section_intro("MARKET MOVERS", "変化が目立つ銘柄", "直近の値動きや出来高の変化が目立つ銘柄を確認します。")
 
     radar = _build_atlas_radar(df)
 
@@ -2057,10 +2019,10 @@ with tabs[0]:
 
             if mode == "volume":
                 main_value = f"{volume_ratio:.2f}x" if volume_ratio is not None else "-"
-                meta = f"{country} | 1M {one_m:+.2f}% | Score {score:.1f}" if one_m is not None else f"{country} | Score {score:.1f}"
+                meta = f"{country} | 1か月 {one_m:+.2f}% | Score {score:.1f}" if one_m is not None else f"{country} | Score {score:.1f}"
             else:
                 main_value = f"{one_m:+.2f}%" if one_m is not None else "-"
-                meta = f"{country} | 3M {three_m:+.2f}% | Score {score:.1f}" if three_m is not None else f"{country} | Score {score:.1f}"
+                meta = f"{country} | 3か月 {three_m:+.2f}% | Score {score:.1f}" if three_m is not None else f"{country} | Score {score:.1f}"
 
             items.append(
                 '<div class="atlas-radar-item">'
@@ -2071,31 +2033,31 @@ with tabs[0]:
                 f'<div class="atlas-radar-value">{main_value}</div>'
                 '</div>'
             )
-        return "".join(items) or '<div class="atlas-radar-meta">No data available.</div>'
+        return "".join(items) or '<div class="atlas-radar-meta">データを取得できませんでした。</div>'
 
     radar_html = (
         '<div class="atlas-radar-grid">'
         '<div class="atlas-radar-panel">'
-        '<div class="atlas-radar-title">LEADING 1M MOVES</div>'
-        '<div class="atlas-radar-sub">Top three 1M returns</div>'
+        '<div class="atlas-radar-title">1か月上昇が目立つ</div>'
+        '<div class="atlas-radar-sub">直近1か月の上昇率が大きい3社</div>'
         + _radar_items_html(radar["up"], "up")
         + '</div>'
         '<div class="atlas-radar-panel">'
-        '<div class="atlas-radar-title">WEAKEST 1M MOVES</div>'
-        '<div class="atlas-radar-sub">Bottom three 1M returns</div>'
+        '<div class="atlas-radar-title">1か月下落が目立つ</div>'
+        '<div class="atlas-radar-sub">直近1か月の下落率が大きい3社</div>'
         + _radar_items_html(radar["down"], "down")
         + '</div>'
         '<div class="atlas-radar-panel">'
-        '<div class="atlas-radar-title">VOLUME ACTIVITY</div>'
-        '<div class="atlas-radar-sub">Highest current volume vs 20-day average</div>'
+        '<div class="atlas-radar-title">出来高が目立つ</div>'
+        '<div class="atlas-radar-sub">現在出来高 ÷ 20日平均が大きい3社</div>'
         + _radar_items_html(radar["volume"], "volume")
         + '</div>'
         '</div>'
     )
     st.markdown(radar_html, unsafe_allow_html=True)
-    st.caption("Radar highlights unusual recent movement and volume. It does not predict what happens next.")
+    st.caption("Radarは最近の値動きや出来高の変化を整理する観察用表示です。今後の値動きを予測するものではありません。")
 
-    _section_intro("SECTOR MOMENTUM", "Sector Map", "Nine broad groups summarize where recent strength and weakness are concentrated across ATLAS 50.")
+    _section_intro("SECTOR MOMENTUM", "業種別ヒートマップ", "29業種を9つの大分類にまとめ、期間別の平均値から強弱の分布を確認します。")
 
     sector_summary, sector_heat = _build_sector_heatmap(df)
 
@@ -2107,19 +2069,19 @@ with tabs[0]:
         sector_spotlight_html = (
             '<div class="sector-spotlight-grid">'
             '<div class="sector-spotlight-card">'
-            '<div class="sector-spotlight-label">Highest average score</div>'
+            '<div class="sector-spotlight-label">平均Score 上位</div>'
             f'<div class="sector-spotlight-value">{html.escape(_sector_group_en(best_score["業種グループ"]))}</div>'
-            f'<div class="sector-spotlight-meta">Score {float(best_score["平均Score"]):.1f} | {int(best_score["銘柄数"])} stocks</div>'
+            f'<div class="sector-spotlight-meta">Score {float(best_score["平均Score"]):.1f} | {int(best_score["銘柄数"])}銘柄</div>'
             '</div>'
             '<div class="sector-spotlight-card">'
-            '<div class="sector-spotlight-label">Best average 1M return</div>'
+            '<div class="sector-spotlight-label">1か月平均 上位</div>'
             f'<div class="sector-spotlight-value">{html.escape(_sector_group_en(best_1m["業種グループ"]))}</div>'
-            f'<div class="sector-spotlight-meta">1M {float(best_1m["1か月平均"]):+.2f}% | Score {float(best_1m["平均Score"]):.1f}</div>'
+            f'<div class="sector-spotlight-meta">1か月 {float(best_1m["1か月平均"]):+.2f}% | Score {float(best_1m["平均Score"]):.1f}</div>'
             '</div>'
             '<div class="sector-spotlight-card">'
-            '<div class="sector-spotlight-label">Broadest 1M strength</div>'
+            '<div class="sector-spotlight-label">上昇の広がり 上位</div>'
             f'<div class="sector-spotlight-value">{html.escape(_sector_group_en(best_breadth["業種グループ"]))}</div>'
-            f'<div class="sector-spotlight-meta">Positive 1M {float(best_breadth["1か月プラス率"]):.0f}% | {int(best_breadth["銘柄数"])} stocks</div>'
+            f'<div class="sector-spotlight-meta">1か月プラス {float(best_breadth["1か月プラス率"]):.0f}% | {int(best_breadth["銘柄数"])}銘柄</div>'
             '</div>'
             '</div>'
         )
@@ -2134,23 +2096,23 @@ with tabs[0]:
             st.markdown(sector_heatmap_html, unsafe_allow_html=True)
 
         st.caption(
-            "Color guide: red is relatively weak, neutral tones sit near the middle, and green is relatively strong. Use the number inside each cell as the primary reference."
+            "色の目安：赤は相対的に弱め、中央付近は中立、緑は相対的に強めです。色だけでなくセル内の数値を優先して確認してください。"
         )
 
-        with st.expander("Sector-group definitions"):
+        with st.expander("業種グループの内訳を見る"):
             grouped_sectors = {}
             for original_sector, grouped_sector in SECTOR_GROUPS.items():
                 grouped_sectors.setdefault(grouped_sector, []).append(original_sector)
             for grouped_sector in sector_order:
                 members = grouped_sectors.get(grouped_sector, [grouped_sector])
                 st.markdown(f"**{_sector_group_en(grouped_sector)}**: {' / '.join(_sector_en(x) for x in members)}")
-            st.caption("These groups are an ATLAS 50 presentation layer, not an official market-sector standard.")
+            st.caption("この分類はATLAS 50独自の見やすさ重視の分類で、市場標準の正式なセクター分類ではありません。")
     else:
-        st.caption("Sector data could not be summarized.")
+        st.caption("業種データを集計できませんでした。")
 
-    st.caption("The sector map organizes current ATLAS 50 data for monitoring only; it is not a sector or stock recommendation.")
+    st.caption("業種別ヒートマップはATLAS 50内の現在データを整理する観察用表示です。業種や銘柄を推奨するものではありません。")
 
-    _section_intro("RANKING", "Top 10", "Stocks with the highest current Atlas Scores inside the 50-stock universe.")
+    _section_intro("RANKING", "注目TOP10", "現在のAtlas Scoreが高い順に上位10銘柄を表示します。")
     top = df.head(10)[
         [
             "順位",
@@ -2174,10 +2136,10 @@ with tabs[0]:
         use_container_width=True,
         hide_index=True,
         column_config={
-            "1M": st.column_config.NumberColumn(format="%.2f%%"),
-            "3M": st.column_config.NumberColumn(format="%.2f%%"),
-            "6M": st.column_config.NumberColumn(format="%.2f%%"),
-            "1Y": st.column_config.NumberColumn(format="%.2f%%"),
+            "1か月": st.column_config.NumberColumn(format="%.2f%%"),
+            "3か月": st.column_config.NumberColumn(format="%.2f%%"),
+            "6か月": st.column_config.NumberColumn(format="%.2f%%"),
+            "1年": st.column_config.NumberColumn(format="%.2f%%"),
             "Atlas Score": st.column_config.ProgressColumn(min_value=0, max_value=100, format="%.1f"),
         },
     )
@@ -2195,10 +2157,10 @@ with tabs[0]:
             f'<div class="home-top10-score">Score {float(top_row["Atlas Score"]):.1f}</div>'
             '</div>'
             '<div class="home-top10-grid">'
-            f'<div class="home-top10-item"><div class="home-top10-label">1M</div><div class="home-top10-value">{_pct_number_text(top_row["1か月"])}</div></div>'
-            f'<div class="home-top10-item"><div class="home-top10-label">3M</div><div class="home-top10-value">{_pct_number_text(top_row["3か月"])}</div></div>'
-            f'<div class="home-top10-item"><div class="home-top10-label">6M</div><div class="home-top10-value">{_pct_number_text(top_row["6か月"])}</div></div>'
-            f'<div class="home-top10-item"><div class="home-top10-label">1Y</div><div class="home-top10-value">{_pct_number_text(top_row["1年"])}</div></div>'
+            f'<div class="home-top10-item"><div class="home-top10-label">1か月</div><div class="home-top10-value">{_pct_number_text(top_row["1か月"])}</div></div>'
+            f'<div class="home-top10-item"><div class="home-top10-label">3か月</div><div class="home-top10-value">{_pct_number_text(top_row["3か月"])}</div></div>'
+            f'<div class="home-top10-item"><div class="home-top10-label">6か月</div><div class="home-top10-value">{_pct_number_text(top_row["6か月"])}</div></div>'
+            f'<div class="home-top10-item"><div class="home-top10-label">1年</div><div class="home-top10-value">{_pct_number_text(top_row["1年"])}</div></div>'
             '</div>'
             f'<div class="home-top10-judge signal-{_status_tone(top_row["判定"])}">{html.escape(_signal_en(top_row["判定"]))}</div>'
             '</div>'
@@ -2208,13 +2170,13 @@ with tabs[0]:
         '<div class="home-top10-mobile">' + "".join(home_top10_cards) + '</div>',
         unsafe_allow_html=True,
     )
-    st.caption("Displayed scores are rounded; rankings may use more precise internal values.")
+    st.caption("表示Scoreは小数1桁に丸めています。同じ表示値でも内部の細かい値で順位が分かれる場合があります。")
 
-    _section_intro("RANK EXPLAINER", "Why this rank?", "Choose a Top 10 stock to see which Atlas inputs are driving its current position.")
+    _section_intro("RANK EXPLAINER", "なぜこの順位？", "TOP10から銘柄を選ぶと、現在の順位を支えているAtlas指標を分かりやすく整理します。")
 
     rank_options = df.head(10)["会社名"].tolist()
     selected_rank_company = st.selectbox(
-        "Stock",
+        "銘柄",
         rank_options,
         key="home_rank_reason_company",
         label_visibility="collapsed",
@@ -2231,43 +2193,43 @@ with tabs[0]:
     )
     rank_card.caption(rank_detail["position"])
     rank_card.info(
-        "**MAIN SCORE DRIVERS**\n\n"
+        "**順位を押し上げている主な要因**\n\n"
         + "\n\n".join(f"- {item}" for item in rank_detail["strengths"])
-        + f"\n\n**TREND SHAPE**\n\n- {rank_detail['trend']}"
+        + f"\n\n**値動きの流れ**\n\n- {rank_detail['trend']}"
     )
     rank_card.warning(
-        "**WHAT TO WATCH**\n\n"
+        "**チェックポイント**\n\n"
         + "\n\n".join(f"- {item}" for item in rank_detail["checks"])
     )
-    rank_card.caption("Ranking reflects current price-trend inputs. It is not a recommendation or forecast.")
+    rank_card.caption("順位は現在の価格トレンド指標を整理したものです。投資推奨や将来予測ではありません。")
  
 # ------------------------------
 # 世界50
 # ------------------------------
 with tabs[1]:
-    _section_intro("UNIVERSE", "Markets", "Search and filter the 50-stock universe by geography, sector, score and current signal.")
+    _section_intro("対象銘柄", "世界50", "会社名・地域・業種・Scoreなどから世界50銘柄を絞り込めます。")
 
     search_text = st.text_input(
-        "Company or ticker",
-        placeholder="e.g. NVIDIA / NVDA / MUFG",
+        "会社名またはTicker",
+        placeholder="例：NVIDIA / NVDA / MUFG",
         key="world_search",
     ).strip()
 
     f1, f2, f3, f4 = st.columns(4)
-    country = f1.selectbox("Country", ["すべて"] + sorted(df["国"].unique().tolist()), key="country", format_func=lambda x: "All" if x == "すべて" else _country_en(x))
-    region = f2.selectbox("Region", ["すべて"] + sorted(df["地域"].unique().tolist()), key="region", format_func=lambda x: "All" if x == "すべて" else _region_en(x))
-    sector = f3.selectbox("Sector", ["すべて"] + sorted(df["業種"].unique().tolist()), key="sector", format_func=lambda x: "All" if x == "すべて" else _sector_en(x))
-    minscore = f4.slider("Minimum Atlas Score", 0, 100, 0, key="score")
+    country = f1.selectbox("国", ["すべて"] + sorted(df["国"].unique().tolist()), key="country", format_func=lambda x: "すべて" if x == "すべて" else _country_en(x))
+    region = f2.selectbox("地域", ["すべて"] + sorted(df["地域"].unique().tolist()), key="region", format_func=lambda x: "すべて" if x == "すべて" else _region_en(x))
+    sector = f3.selectbox("業種", ["すべて"] + sorted(df["業種"].unique().tolist()), key="sector", format_func=lambda x: "すべて" if x == "すべて" else _sector_en(x))
+    minscore = f4.slider("最低Atlas Score", 0, 100, 0, key="score")
 
     f5, f6 = st.columns(2)
     judge_filter = f5.selectbox(
-        "Signal",
+        "判定",
         ["すべて", "強い＋", "＋", "様子見", "－"],
         key="world_judge",
-        format_func=lambda x: "All" if x == "すべて" else _signal_en(x),
+        format_func=lambda x: "すべて" if x == "すべて" else _signal_en(x),
     )
     world_sort = f6.selectbox(
-        "Sort by",
+        "並び順",
         ["Atlas Scoreが高い順", "1か月上昇率が高い順", "3か月上昇率が高い順", "円換算価格が安い順"],
         key="world_sort",
         format_func=lambda x: WORLD_SORT_EN.get(x, x),
@@ -2299,7 +2261,7 @@ with tabs[1]:
     }
     sort_col, sort_ascending = world_sort_map[world_sort]
     view = view.sort_values(sort_col, ascending=sort_ascending, na_position="last").copy()
-    st.caption(f"Showing {len(view)} of {len(df)} stocks")
+    st.caption(f"表示中: {len(view)} / {len(df)}銘柄")
 
     show = view[
         [
@@ -2326,11 +2288,11 @@ with tabs[1]:
         use_container_width=True,
         hide_index=True,
         column_config={
-            "JPY Price": st.column_config.NumberColumn(format="¥%.0f"),
-            "1M": st.column_config.NumberColumn(format="%.2f%%"),
-            "3M": st.column_config.NumberColumn(format="%.2f%%"),
-            "6M": st.column_config.NumberColumn(format="%.2f%%"),
-            "1Y": st.column_config.NumberColumn(format="%.2f%%"),
+            "円換算価格": st.column_config.NumberColumn(format="¥%.0f"),
+            "1か月": st.column_config.NumberColumn(format="%.2f%%"),
+            "3か月": st.column_config.NumberColumn(format="%.2f%%"),
+            "6か月": st.column_config.NumberColumn(format="%.2f%%"),
+            "1年": st.column_config.NumberColumn(format="%.2f%%"),
             "Atlas Score": st.column_config.ProgressColumn(
                 min_value=0,
                 max_value=100,
@@ -2341,7 +2303,7 @@ with tabs[1]:
 
     # スマホ用カードは1回のHTML描画にまとめる。
     # MarkdownにHTMLを渡す際、行頭の空白がコードブロック扱いされないよう
-    # HTML文字列はインデントなしで組み立てる。
+    # HTML文字列はインデントNoneで組み立てる。
     mobile_cards = []
     for _, mobile_row in show.iterrows():
         mobile_cards.append(
@@ -2351,8 +2313,8 @@ with tabs[1]:
             f"<div class=\"mobile-meta\">{html.escape(_country_en(mobile_row['国']))} | {html.escape(_sector_en(mobile_row['業種']))}</div>"
             f"<div class=\"mobile-score\">Atlas Score {float(mobile_row['Atlas Score']):.1f}</div>"
             "<div class=\"mobile-stats\">"
-            f"1M {_pct_number_text(mobile_row['1か月'])} | 3M {_pct_number_text(mobile_row['3か月'])}<br>"
-            f"6M {_pct_number_text(mobile_row['6か月'])} | 1Y {_pct_number_text(mobile_row['1年'])}"
+            f"1か月 {_pct_number_text(mobile_row['1か月'])} | 3か月 {_pct_number_text(mobile_row['3か月'])}<br>"
+            f"6か月 {_pct_number_text(mobile_row['6か月'])} | 1年 {_pct_number_text(mobile_row['1年'])}"
             "</div>"
             f"<div class=\"mobile-judge signal-{_status_tone(mobile_row['判定'])}\">{html.escape(_signal_en(mobile_row['判定']))}</div>"
             "</div>"
@@ -2360,7 +2322,7 @@ with tabs[1]:
 
     mobile_html = (
         '<div class="mobile-list-wrap">'
-        '<div class="mobile-list-title">STOCK LIST</div>'
+        '<div class="mobile-list-title">銘柄一覧</div>'
         + "".join(mobile_cards)
         + "</div>"
     )
@@ -2372,27 +2334,27 @@ with tabs[1]:
 # 個別分析
 # ------------------------------
 with tabs[2]:
-    _section_intro("DEEP DIVE", "Stock Analysis", "Choose one company to review its trend, Atlas Score components, chart and relevant news.")
+    _section_intro("DEEP DIVE", "個別分析", "気になる企業を選ぶと、値動き・Atlas Score・チャート・関連ニュースをまとめて確認できます。")
 
-    selected = st.selectbox("Company", df["会社名"].tolist(), key="detail_company")
+    selected = st.selectbox("会社", df["会社名"].tolist(), key="detail_company")
     row = df[df["会社名"] == selected].iloc[0]
     t = row["Ticker"]
 
     price_text = f'¥{row["円換算価格"]:,.0f}' if pd.notna(row["円換算価格"]) else "-"
 
     st.markdown(f"## {selected}")
-    st.caption(f"{_country_en(row['国'])} | {_sector_en(row['業種'])} | Ticker {t} | JPY equivalent {price_text}")
+    st.caption(f"{_country_en(row['国'])} | {_sector_en(row['業種'])} | Ticker {t} | 円換算 {price_text}")
 
     # 6個の重要指標を、スマホでも崩れにくい3列×2段で表示。
     c1, c2, c3 = st.columns(3)
     c1.metric("Atlas Score", f'{row["Atlas Score"]:.1f}')
-    c2.metric("Signal", _signal_en(row["判定"]))
-    c3.metric("1M", _pct_text(row["1か月"]))
+    c2.metric("判定", _signal_en(row["判定"]))
+    c3.metric("1か月", _pct_text(row["1か月"]))
 
     c4, c5, c6 = st.columns(3)
-    c4.metric("3M", _pct_text(row["3か月"]))
-    c5.metric("6M", _pct_text(row["6か月"]))
-    c6.metric("1Y", _pct_text(row["1年"]))
+    c4.metric("3か月", _pct_text(row["3か月"]))
+    c5.metric("6か月", _pct_text(row["6か月"]))
+    c6.metric("1年", _pct_text(row["1年"]))
 
     score = float(row["Atlas Score"])
     one_month = float(row["1か月"]) * 100 if pd.notna(row["1か月"]) else None
@@ -2400,50 +2362,50 @@ with tabs[2]:
     six_month = float(row["6か月"]) * 100 if pd.notna(row["6か月"]) else None
     one_year = float(row["1年"]) * 100 if pd.notna(row["1年"]) else None
 
-    _section_intro("QUICK READ", "30-second view", "A plain-language summary of the strongest and weakest signals in the current data.")
+    _section_intro("QUICK READ", "30秒でわかる", "現在データのプラス材料と確認ポイントを初心者向けに短く整理します。")
 
     good_points = []
     risk_points = []
 
     if score >= 80:
-        good_points.append("Atlas Score is high relative to the rest of the universe.")
+        good_points.append("Atlas Scoreが高く、50銘柄の中でも現在の注目度は高めです。")
     elif score >= 65:
-        good_points.append("Atlas Score is in the mid-to-high range.")
+        good_points.append("Atlas Scoreは中〜高水準です。")
 
     for label, value in [
-        ("1M", one_month),
-        ("3M", three_month),
-        ("6M", six_month),
-        ("1Y", one_year),
+        ("1か月", one_month),
+        ("3か月", three_month),
+        ("6か月", six_month),
+        ("1年", one_year),
     ]:
         if value is None:
             continue
         if value > 0:
-            good_points.append(f"{label} return is +{value:.1f}%.")
+            good_points.append(f"{label}は +{value:.1f}%です。")
         else:
-            risk_points.append(f"{label} return is {value:.1f}%.")
+            risk_points.append(f"{label}は {value:.1f}%です。")
 
     if one_month is not None and abs(one_month) >= 15:
-        risk_points.append("The 1M move is large, so short-term volatility is elevated.")
+        risk_points.append("1か月の値動きが大きく、短期の価格変動には注意が必要です。")
 
     if not good_points:
-        good_points.append("No especially strong positive price-trend signal stands out right now.")
+        good_points.append("現在は特に強いプラス材料が目立たない状態です。")
 
     if not risk_points:
-        risk_points.append("No major warning stands out from price-trend data alone.")
+        risk_points.append("価格トレンドだけでは大きな警戒材料は確認されていません。")
 
     st.info(
-        "### What looks constructive\n\n"
+        "### プラス材料\n\n"
         + "\n\n".join(f"- {x}" for x in good_points)
     )
 
     st.warning(
-        "### What to watch\n\n"
+        "### チェックポイント\n\n"
         + "\n\n".join(f"- {x}" for x in risk_points)
     )
 
     is_favorite = t in st.session_state.favorites
-    favorite_label = "Remove from watchlist" if is_favorite else "Add to watchlist"
+    favorite_label = "ウォッチリストから解除" if is_favorite else "ウォッチリストに追加"
     if st.button(favorite_label, key="fav_btn"):
         if is_favorite:
             st.session_state.favorites.remove(t)
@@ -2452,7 +2414,7 @@ with tabs[2]:
         st.session_state.favorites_editor_version += 1
         st.rerun()
 
-    _section_intro("CONTEXT", "Why it stands out", "A simple interpretation of the score and time-horizon pattern.")
+    _section_intro("CONTEXT", "なぜ今注目？", "Scoreと期間別の値動きから、現在注目される背景を整理します。")
 
     news_preview = load_news(t, selected)
     reasons = _build_attention_reasons(
@@ -2466,18 +2428,18 @@ with tabs[2]:
 
     if reasons:
         st.info(
-            "### Key context\n\n"
+            "### 注目ポイント\n\n"
             + "\n\n".join(f"- {reason}" for reason in reasons)
         )
     else:
         st.info(
-            "### Key context\n\n"
-            "- No major trend stands out in the current data."
+            "### 注目ポイント\n\n"
+            "- 現在は大きく目立つトレンドが少ない状態です。"
         )
 
-    _section_intro("NEWS", "Latest News & AI Notes", "Up to three related headlines. AI notes run only when you request them.")
+    _section_intro("NEWS", "最新ニュース & AI解説", "関連ニュースを最大3件表示します。AI解説はボタンを押した時だけ実行します。")
     st.caption(
-        "AI notes are optional and use only the headline and source summary shown here."
+        "AI解説は任意です。表示されている見出しと概要だけを使って整理します。"
     )
 
     if news_preview:
@@ -2485,7 +2447,7 @@ with tabs[2]:
             {
                 "title": str(item.get("title", "")),
                 "summary": str(item.get("summary", ""))[:1500],
-                "publisher": str(item.get("publisher", "News")),
+                "publisher": str(item.get("publisher", "ニュース")),
             }
             for item in news_preview[:3]
         ]
@@ -2496,11 +2458,11 @@ with tabs[2]:
         )
 
         if st.button(
-            "Generate AI news notes",
+            "AIでニュースを整理する",
             key=f"news_ai_button_{t}",
             use_container_width=True,
         ):
-            with st.spinner(f"ATLAS AI is organizing the news... up to {int(AI_TIMEOUT_SECONDS)} seconds"):
+            with st.spinner(f"ATLAS AIがニュースを整理中... 最大 {int(AI_TIMEOUT_SECONDS)}秒"):
                 st.session_state.news_ai_result = analyze_news_batch_with_ai(
                     selected,
                     json.dumps(news_payload, ensure_ascii=False, sort_keys=True),
@@ -2512,63 +2474,66 @@ with tabs[2]:
             active_news_ai = st.session_state.news_ai_result
 
         if active_news_ai and not active_news_ai.get("ok", False):
-            st.warning("AI notes are temporarily unavailable. The original headlines are still available.")
+            st.warning("AI解説を一時的に取得できません。元のニュース見出しはそのまま確認できます。")
 
         ai_items = active_news_ai.get("items", {}) if active_news_ai and active_news_ai.get("ok") else {}
 
         for i, item in enumerate(news_preview[:3], start=1):
             card = st.container(border=True)
-            card.markdown(f"### News {i}")
+            card.markdown(f"### ニュース {i}")
 
             ai_news = ai_items.get(i - 1) if isinstance(ai_items, dict) else None
             if ai_news:
                 title_display = ai_news.get("title_ja", item["title"])
-                summary_display = ai_news.get("summary", "AI explanation was unavailable.")
+                summary_display = ai_news.get("summary", "AI解説を取得できませんでした。")
                 impact = ai_news.get("impact", "NEUTRAL")
-
-                impact_label = impact
+                impact_label = {
+                    "TAILWIND": "追い風候補",
+                    "NEUTRAL": "中立",
+                    "RISK": "リスク候補",
+                }.get(str(impact).upper(), "中立")
 
                 card.write(f"**{title_display}**")
-                card.caption(f"Source: {item['publisher']}")
-                card.info(f"Plain-English note\n\n{summary_display}")
-                card.write(f"**Possible impact: {impact_label}**")
-                card.caption(f"Original headline: {item['title']}")
+                card.caption(f"情報元: {item['publisher']}")
+                card.info(f"初心者向け解説\n\n{summary_display}")
+                card.write(f"**ニュースの影響: {impact_label}**")
+                card.caption(f"原文見出し: {item['title']}")
             else:
                 card.write(f"**{item['title']}**")
-                card.caption(f"Source: {item['publisher']} | Generate AI notes with the button above")
+                card.caption(f"情報元: {item['publisher']} | 上のボタンからAI解説を作成できます")
                 source_summary = str(item.get("summary", "") or "").strip()
                 if source_summary:
                     card.write(source_summary[:500] + ("…" if len(source_summary) > 500 else ""))
 
             if item.get("link"):
-                card.markdown(f"[Open source article]({item['link']})")
+                card.markdown(f"[元の記事を見る]({item['link']})")
     else:
-        st.caption("No related news is available right now.")
+        st.caption("関連ニュースを取得できませんでした。")
 
-    _section_intro("PRICE", "1-Year Chart", "Close price with 20-day and 60-day moving averages.")
+    _section_intro("PRICE", "1年チャート", "株価と20日・60日移動平均線を表示します。")
 
     hist = histories.get(t)
     if hist is not None and not hist.empty:
         st.line_chart(hist[["Close", "SMA20", "SMA60"]])
     else:
-        st.caption("Chart data is unavailable.")
+        st.caption("チャートデータを取得できませんでした。")
 
-    _section_intro("SCORE MODEL", "Atlas Score Breakdown", "See which components are contributing to the current score.")
+    _section_intro("SCORE MODEL", "Atlas Scoreの内訳", "Atlas Scoreを構成している各指標の点数を確認できます。")
 
     parts = row["Score内訳"]
-    parts_df = pd.DataFrame({"Component": [SCORE_PART_EN.get(str(k), str(k)) for k in parts.keys()], "Points": list(parts.values())})
-    st.bar_chart(parts_df.set_index("Component")["Points"])
+    parts_df = pd.DataFrame({"項目": [SCORE_PART_EN.get(str(k), str(k)) for k in parts.keys()], "点数": list(parts.values())})
+    st.bar_chart(parts_df.set_index("項目")["点数"])
 
 
 # ------------------------------
 # 銘柄比較
 # ------------------------------
 with tabs[3]:
-    _section_intro("SIDE BY SIDE", "Compare", "Compare 2–4 stocks using the same return periods and Atlas Score framework.")
+    _section_intro("COMPARE", "銘柄比較", "2〜4銘柄を同じ期間とAtlas Scoreの基準で並べ、違いを確認します。")
 
     default_compare = df.head(2)["会社名"].tolist()
     compare_names = st.multiselect(
-        "Companies (2–4)",
+        "比較する企業（2〜4社）",
         options=df["会社名"].tolist(),
         default=default_compare,
         max_selections=4,
@@ -2576,14 +2541,14 @@ with tabs[3]:
     )
 
     if len(compare_names) < 2:
-        st.info("Select at least two companies to compare.")
+        st.info("比較する企業を2社以上選んでください。")
     else:
         compare_df = df[df["会社名"].isin(compare_names)].copy()
         compare_order = {name: i for i, name in enumerate(compare_names)}
         compare_df["_order"] = compare_df["会社名"].map(compare_order)
         compare_df = compare_df.sort_values("_order")
 
-        st.markdown("### Core comparison")
+        st.markdown("### 基本比較")
         compare_show = compare_df[
             [
                 "会社名",
@@ -2609,11 +2574,11 @@ with tabs[3]:
             use_container_width=True,
             hide_index=True,
             column_config={
-                "JPY Price": st.column_config.NumberColumn(format="¥%.0f"),
-                "1M": st.column_config.NumberColumn(format="%.2f%%"),
-                "3M": st.column_config.NumberColumn(format="%.2f%%"),
-                "6M": st.column_config.NumberColumn(format="%.2f%%"),
-                "1Y": st.column_config.NumberColumn(format="%.2f%%"),
+                "円換算価格": st.column_config.NumberColumn(format="¥%.0f"),
+                "1か月": st.column_config.NumberColumn(format="%.2f%%"),
+                "3か月": st.column_config.NumberColumn(format="%.2f%%"),
+                "6か月": st.column_config.NumberColumn(format="%.2f%%"),
+                "1年": st.column_config.NumberColumn(format="%.2f%%"),
                 "Atlas Score": st.column_config.ProgressColumn(
                     min_value=0,
                     max_value=100,
@@ -2648,10 +2613,10 @@ with tabs[3]:
                 f'<div class="compare-card-score">Score {score_text}</div>'
                 '</div>'
                 '<div class="compare-card-grid">'
-                f'<div class="compare-card-item"><div class="compare-card-label">1M</div><div class="compare-card-value">{period_values["1か月"]}</div></div>'
-                f'<div class="compare-card-item"><div class="compare-card-label">3M</div><div class="compare-card-value">{period_values["3か月"]}</div></div>'
-                f'<div class="compare-card-item"><div class="compare-card-label">6M</div><div class="compare-card-value">{period_values["6か月"]}</div></div>'
-                f'<div class="compare-card-item"><div class="compare-card-label">1Y</div><div class="compare-card-value">{period_values["1年"]}</div></div>'
+                f'<div class="compare-card-item"><div class="compare-card-label">1か月</div><div class="compare-card-value">{period_values["1か月"]}</div></div>'
+                f'<div class="compare-card-item"><div class="compare-card-label">3か月</div><div class="compare-card-value">{period_values["3か月"]}</div></div>'
+                f'<div class="compare-card-item"><div class="compare-card-label">6か月</div><div class="compare-card-value">{period_values["6か月"]}</div></div>'
+                f'<div class="compare-card-item"><div class="compare-card-label">1年</div><div class="compare-card-value">{period_values["1年"]}</div></div>'
                 '</div>'
                 f'<div class="compare-card-judge signal-{_status_tone(compare_row["判定"])}">{judge}</div>'
                 '</div>'
@@ -2663,8 +2628,8 @@ with tabs[3]:
             unsafe_allow_html=True,
         )
 
-        st.markdown("### 1-year normalized performance")
-        st.caption("Each line starts at 100 so you can compare movement rather than absolute share price.")
+        st.markdown("### 1年の値動きを100基準で比較")
+        st.caption("各社の開始時点を100として、株価水準ではなく値動きの差を比較します。")
 
         normalized_series = []
         for _, compare_row in compare_df.iterrows():
@@ -2685,12 +2650,12 @@ with tabs[3]:
             normalized_df = pd.concat(normalized_series, axis=1).sort_index()
             normalized_df = normalized_df.ffill().dropna(how="any")
             st.line_chart(normalized_df, height=360)
-            st.caption("Non-trading days are forward-filled for visualization only.")
+            st.caption("市場ごとの休場日は、比較表示上のみ直前の終値を引き継いでいます。")
         else:
-            st.caption("There is not enough price data to build the comparison chart.")
+            st.caption("比較チャートを作るための価格データが不足しています。")
 
-        st.markdown("### Atlas Score component comparison")
-        st.caption("See where the score differences actually come from.")
+        st.markdown("### Atlas Scoreの内訳比較")
+        st.caption("総合Scoreだけでなく、どの項目で差が出ているか確認できます。")
 
         parts_map = {}
         part_order = []
@@ -2704,10 +2669,10 @@ with tabs[3]:
         if parts_map:
             parts_compare = pd.DataFrame(parts_map).fillna(0)
             parts_long = (
-                parts_compare.rename_axis("Component")
+                parts_compare.rename_axis("項目")
                 .reset_index()
-                .assign(Component=lambda x: x["Component"].map(lambda v: SCORE_PART_EN.get(str(v), str(v))))
-                .melt(id_vars="Component", var_name="Company", value_name="Points")
+                .assign(項目=lambda x: x["項目"].map(lambda v: SCORE_PART_EN.get(str(v), str(v))))
+                .melt(id_vars="項目", var_name="会社", value_name="点数")
             )
 
             score_chart = (
@@ -2715,28 +2680,28 @@ with tabs[3]:
                 .mark_bar(cornerRadiusEnd=3)
                 .encode(
                     y=alt.Y(
-                        "Component:N",
+                        "項目:N",
                         sort=[SCORE_PART_EN.get(str(x), str(x)) for x in part_order],
                         title=None,
                         axis=alt.Axis(labelLimit=120),
                     ),
-                    x=alt.X("Points:Q", title="Points", scale=alt.Scale(zero=True)),
-                    color=alt.Color("Company:N", title=None, scale=alt.Scale(range=["#63E6D5", "#6BA8FF", "#F5C76B", "#C084FC"])),
-                    yOffset=alt.YOffset("Company:N"),
+                    x=alt.X("点数:Q", title="点数", scale=alt.Scale(zero=True)),
+                    color=alt.Color("会社:N", title=None, scale=alt.Scale(range=["#63E6D5", "#6BA8FF", "#F5C76B", "#C084FC"])),
+                    yOffset=alt.YOffset("会社:N"),
                     tooltip=[
-                        alt.Tooltip("Company:N", title="Company"),
-                        alt.Tooltip("Component:N", title="Component"),
-                        alt.Tooltip("Points:Q", title="Points", format=".1f"),
+                        alt.Tooltip("会社:N", title="会社"),
+                        alt.Tooltip("項目:N", title="項目"),
+                        alt.Tooltip("点数:Q", title="点数", format=".1f"),
                     ],
                 )
                 .properties(height=max(300, len(part_order) * 48))
             )
             st.altair_chart(score_chart, use_container_width=True)
         else:
-            st.caption("Score components could not be compared.")
+            st.caption("Score内訳を比較できませんでした。")
 
-        st.markdown("### ATLAS AI comparison notes")
-        st.caption("Uses only the selected return data and Atlas Score components to explain differences in plain English.")
+        st.markdown("### ATLAS AI 比較解説")
+        st.caption("選択した騰落率とAtlas Score内訳だけを使い、違いを初心者向けの日本語で整理します。")
 
         compare_payload = {"companies": []}
         for _, ai_row in compare_df.iterrows():
@@ -2768,11 +2733,11 @@ with tabs[3]:
         )
 
         if st.button(
-            "Generate AI comparison notes",
+            "ATLAS AIで比較を整理する",
             key="compare_ai_button",
             use_container_width=True,
         ):
-            with st.spinner(f"ATLAS AI is comparing the selected data... up to {int(AI_TIMEOUT_SECONDS)} seconds"):
+            with st.spinner(f"ATLAS AIが比較データを整理中... 最大 {int(AI_TIMEOUT_SECONDS)}秒"):
                 st.session_state.comparison_ai_result = analyze_comparison_with_ai(
                     compare_payload_json
                 )
@@ -2785,68 +2750,68 @@ with tabs[3]:
         if ai_result:
             if ai_result.get("ok", True):
                 st.success(
-                    "### Overview\n\n"
+                    "### 比較全体\n\n"
                     + ai_result.get(
                         "overview",
-                        "The selected stocks were compared using price trends and Atlas Score components.",
+                        "選択した銘柄を、価格トレンドとAtlas Score構成要素で比較しました。",
                     )
                 )
             else:
                 st.warning(
-                    "### AI notes are unavailable\n\n"
+                    "### AI解説を利用できません\n\n"
                     + ai_result.get(
                         "overview",
-                        "The core comparison table and charts are still available.",
+                        "通常の比較表とチャートはそのまま確認できます。",
                     )
                 )
 
             company_notes = ai_result.get("company_notes", [])
             if company_notes:
-                st.markdown("#### Company notes")
+                st.markdown("#### 各社の特徴")
                 for note in company_notes:
                     note_card = st.container(border=True)
-                    note_card.markdown(f"**{note.get('company', 'Company')}**")
+                    note_card.markdown(f"**{note.get('company', '会社')}**")
                     note_card.write(note.get("note", ""))
 
             key_differences = ai_result.get("key_differences", [])
             if key_differences:
                 st.info(
-                    "### Key differences\n\n"
+                    "### 主な違い\n\n"
                     + "\n".join(f"- {item}" for item in key_differences)
                 )
 
             watch_points = ai_result.get("watch_points", [])
             if watch_points:
                 st.warning(
-                    "### What to watch\n\n"
+                    "### チェックポイント\n\n"
                     + "\n".join(f"- {item}" for item in watch_points)
                 )
 
             st.caption(
-                "AI notes summarize the price-trend and Atlas Score data shown here. They are not investment advice or a forecast."
+                "AI解説はこの画面の価格トレンドとAtlas Scoreデータを整理したものです。投資助言や将来予測ではありません。"
             )
 
-        st.info("### How to read this comparison\n\n- Look across 1M to 1Y instead of focusing on one short-term return.\n\n- Atlas Score organizes current price-trend signals; it does not measure intrinsic value or guarantee future returns.")
+        st.info("### 比較の見方\n\n- 短期だけで判断せず、1か月〜1年の流れを合わせて確認します。\n\n- Atlas Scoreは現在の価格トレンドを整理する学習・監視指標で、企業価値や将来の利益を保証するものではありません。")
 
 
 # ------------------------------
 # お気に入り
 # ------------------------------
 with tabs[4]:
-    _section_intro("SAVED STOCKS", "Watchlist", "Keep the companies you want to monitor in one place.")
+    _section_intro("WATCHLIST", "ウォッチリスト", "気になる銘柄を保存して、値動きやAtlas Scoreをまとめて確認できます。")
 
-    with st.expander("Edit watchlist"):
+    with st.expander("ウォッチリストを編集"):
         current_favorite_names = [
             name for ticker, name, *_ in COMPANIES
             if ticker in st.session_state.favorites
         ]
         edited_favorite_names = st.multiselect(
-            "Watchlist companies",
+            "ウォッチリストの企業",
             options=[row[1] for row in COMPANIES],
             default=current_favorite_names,
             key=f"favorites_editor_names_{st.session_state.favorites_editor_version}",
         )
-        if st.button("Update watchlist", use_container_width=True, key="favorites_editor_apply"):
+        if st.button("ウォッチリストを更新", use_container_width=True, key="favorites_editor_apply"):
             name_to_ticker = {row[1]: row[0] for row in COMPANIES}
             st.session_state.favorites = {name_to_ticker[name] for name in edited_favorite_names}
             st.session_state.favorites_editor_version += 1
@@ -2855,13 +2820,13 @@ with tabs[4]:
     favdf = df[df["Ticker"].isin(st.session_state.favorites)].copy()
 
     if favdf.empty:
-        st.info("Add companies from Stock Analysis or use Edit watchlist above.")
+        st.info("個別分析から追加するか、上の「ウォッチリストを編集」から企業を選んでください。")
     else:
         fm1, fm2, fm3 = st.columns(3)
-        fm1.metric("SAVED", f"{len(favdf)}")
-        fm2.metric("AVG SCORE", f"{favdf['Atlas Score'].mean():.1f}")
+        fm1.metric("保存銘柄", f"{len(favdf)}")
+        fm2.metric("平均Score", f"{favdf['Atlas Score'].mean():.1f}")
         fav_1m_mean = favdf["1か月"].mean() * 100 if favdf["1か月"].notna().any() else float("nan")
-        fm3.metric("AVG 1M", "-" if pd.isna(fav_1m_mean) else f"{fav_1m_mean:+.2f}%")
+        fm3.metric("平均1か月", "-" if pd.isna(fav_1m_mean) else f"{fav_1m_mean:+.2f}%")
 
         favorite_cards = []
         for _, fav_row in favdf.iterrows():
@@ -2880,11 +2845,11 @@ with tabs[4]:
                 f'<div class="mobile-detail-score">Score {float(fav_row["Atlas Score"]):.1f}</div>'
                 '</div>'
                 '<div class="mobile-detail-grid">'
-                f'<div class="mobile-detail-item"><div class="mobile-detail-label">JPY price</div><div class="mobile-detail-value">{price}</div></div>'
-                f'<div class="mobile-detail-item"><div class="mobile-detail-label">1M</div><div class="mobile-detail-value">{_pct_text(fav_row["1か月"])}</div></div>'
-                f'<div class="mobile-detail-item"><div class="mobile-detail-label">3M</div><div class="mobile-detail-value">{_pct_text(fav_row["3か月"])}</div></div>'
-                f'<div class="mobile-detail-item"><div class="mobile-detail-label">6M</div><div class="mobile-detail-value">{_pct_text(fav_row["6か月"])}</div></div>'
-                f'<div class="mobile-detail-item"><div class="mobile-detail-label">1Y</div><div class="mobile-detail-value">{_pct_text(fav_row["1年"])}</div></div>'
+                f'<div class="mobile-detail-item"><div class="mobile-detail-label">円換算価格</div><div class="mobile-detail-value">{price}</div></div>'
+                f'<div class="mobile-detail-item"><div class="mobile-detail-label">1か月</div><div class="mobile-detail-value">{_pct_text(fav_row["1か月"])}</div></div>'
+                f'<div class="mobile-detail-item"><div class="mobile-detail-label">3か月</div><div class="mobile-detail-value">{_pct_text(fav_row["3か月"])}</div></div>'
+                f'<div class="mobile-detail-item"><div class="mobile-detail-label">6か月</div><div class="mobile-detail-value">{_pct_text(fav_row["6か月"])}</div></div>'
+                f'<div class="mobile-detail-item"><div class="mobile-detail-label">1年</div><div class="mobile-detail-value">{_pct_text(fav_row["1年"])}</div></div>'
                 '</div>'
                 f'<div class="mobile-detail-judge signal-{_status_tone(fav_row["判定"])}">{html.escape(_signal_en(fav_row["判定"]))}</div>'
                 '</div>'
@@ -2895,7 +2860,7 @@ with tabs[4]:
             unsafe_allow_html=True,
         )
 
-        with st.expander("Open table view"):
+        with st.expander("表で見る"):
             favshow = favdf[
                 [
                     "順位", "会社名", "国", "円換算価格",
@@ -2910,11 +2875,11 @@ with tabs[4]:
                 use_container_width=True,
                 hide_index=True,
                 column_config={
-                    "JPY Price": st.column_config.NumberColumn(format="¥%.0f"),
-                    "1M": st.column_config.NumberColumn(format="%.2f%%"),
-                    "3M": st.column_config.NumberColumn(format="%.2f%%"),
-                    "6M": st.column_config.NumberColumn(format="%.2f%%"),
-                    "1Y": st.column_config.NumberColumn(format="%.2f%%"),
+                    "円換算価格": st.column_config.NumberColumn(format="¥%.0f"),
+                    "1か月": st.column_config.NumberColumn(format="%.2f%%"),
+                    "3か月": st.column_config.NumberColumn(format="%.2f%%"),
+                    "6か月": st.column_config.NumberColumn(format="%.2f%%"),
+                    "1年": st.column_config.NumberColumn(format="%.2f%%"),
                     "Atlas Score": st.column_config.ProgressColumn(min_value=0, max_value=100, format="%.1f"),
                 },
             )
@@ -2924,8 +2889,8 @@ with tabs[4]:
 # 保有株
 # ------------------------------
 with tabs[5]:
-    _section_intro("YOUR POSITIONS", "Portfolio", "Enter shares and average cost to estimate current JPY value and profit/loss.")
-    st.caption("Enter shares and average cost in the stock's trading currency. Foreign positions are converted to JPY using current FX rates; values are estimates.")
+    _section_intro("PORTFOLIO", "保有株", "保有銘柄・株数・平均取得単価を入力すると、現在の評価額と損益を確認できます。")
+    st.caption("株数と平均取得単価を入力してください。外国株は現在の為替で円換算するため、評価額は目安です。")
 
     if st.session_state.portfolio_csv_flash:
         st.success(st.session_state.portfolio_csv_flash)
@@ -2940,8 +2905,8 @@ with tabs[5]:
                 options=[x[0] for x in COMPANIES],
                 required=True,
             ),
-            "株数": st.column_config.NumberColumn("Shares", min_value=0.0, step=0.01),
-            "平均取得単価": st.column_config.NumberColumn("Avg cost (local currency)", min_value=0.0, step=0.01),
+            "株数": st.column_config.NumberColumn("株数", min_value=0.0, step=0.01),
+            "平均取得単価": st.column_config.NumberColumn("平均取得単価（現地通貨）", min_value=0.0, step=0.01),
         },
         key=f"portfolio_editor_{st.session_state.portfolio_editor_version}",
     )
@@ -2990,7 +2955,7 @@ with tabs[5]:
         ])
 
     if skipped_portfolio:
-        st.warning("Some positions could not be calculated because FX or JPY price data is missing: " + ", ".join(dict.fromkeys(skipped_portfolio)))
+        st.warning("為替または円換算価格を取得できず、計算できない保有株があります: " + ", ".join(dict.fromkeys(skipped_portfolio)))
 
     if calc:
         pf = pd.DataFrame(
@@ -3001,40 +2966,40 @@ with tabs[5]:
             ],
         )
 
-        st.markdown("### Portfolio summary")
+        st.markdown("### 保有状況サマリー")
         total_invested = pf["投資額(円)"].sum()
         total_current = pf["評価額(円)"].sum()
         total_pnl = pf["損益(円)"].sum()
         total_pnl_rate = total_pnl / total_invested * 100 if total_invested else 0
 
         p1, p2, p3 = st.columns(3)
-        p1.metric("COST", f"¥{total_invested:,.0f}")
-        p2.metric("VALUE", f"¥{total_current:,.0f}")
-        p3.metric("P / L", f"¥{total_pnl:,.0f}", delta=f"{total_pnl_rate:+.2f}%")
+        p1.metric("投資額", f"¥{total_invested:,.0f}")
+        p2.metric("評価額", f"¥{total_current:,.0f}")
+        p3.metric("損益", f"¥{total_pnl:,.0f}", delta=f"{total_pnl_rate:+.2f}%")
 
         if len(pf) >= 2:
-            st.markdown("### Portfolio composition")
+            st.markdown("### 保有比率")
             allocation = (
                 pf.groupby("会社名", as_index=False)["評価額(円)"]
                 .sum()
                 .sort_values("評価額(円)", ascending=False)
-                .rename(columns={"会社名": "Company", "評価額(円)": "Value (JPY)"})
+                .rename(columns={"会社名": "会社", "評価額(円)": "評価額(円)"})
             )
             allocation_chart = (
                 alt.Chart(allocation)
                 .mark_bar(cornerRadiusEnd=4)
                 .encode(
-                    y=alt.Y("Company:N", sort="-x", title=None),
-                    x=alt.X("Value (JPY):Q", title="Value (JPY)"),
+                    y=alt.Y("会社:N", sort="-x", title=None),
+                    x=alt.X("評価額(円):Q", title="評価額(円)"),
                     tooltip=[
-                        alt.Tooltip("Company:N", title="Company"),
-                        alt.Tooltip("Value (JPY):Q", title="Value", format=",.0f"),
+                        alt.Tooltip("会社:N", title="会社"),
+                        alt.Tooltip("評価額(円):Q", title="評価額", format=",.0f"),
                     ],
                 )
                 .properties(height=max(160, min(360, len(allocation) * 34)))
             )
             st.altair_chart(allocation_chart, use_container_width=True)
-            st.caption("Composition uses current JPY-equivalent values and does not imply an allocation recommendation.")
+            st.caption("保有比率は現在の円換算評価額をもとに表示しています。資産配分を推奨するものではありません。")
 
         portfolio_cards = []
         for _, pf_row in pf.iterrows():
@@ -3044,15 +3009,15 @@ with tabs[5]:
                 '<div class="mobile-detail-head">'
                 '<div>'
                 f'<div class="mobile-detail-company">{html.escape(str(pf_row["会社名"]))}</div>'
-                f'<div class="mobile-detail-meta">{html.escape(str(pf_row["Ticker"]))} | {float(pf_row["株数"]):g} shares</div>'
+                f'<div class="mobile-detail-meta">{html.escape(str(pf_row["Ticker"]))} | {float(pf_row["株数"]):g}株</div>'
                 '</div>'
                 f'<div class="mobile-detail-score">Score {float(pf_row["Score"]):.1f}</div>'
                 '</div>'
                 '<div class="mobile-detail-grid">'
-                f'<div class="mobile-detail-item"><div class="mobile-detail-label">Cost</div><div class="mobile-detail-value">¥{float(pf_row["投資額(円)"]):,.0f}</div></div>'
-                f'<div class="mobile-detail-item"><div class="mobile-detail-label">Value</div><div class="mobile-detail-value">¥{float(pf_row["評価額(円)"]):,.0f}</div></div>'
-                f'<div class="mobile-detail-item"><div class="mobile-detail-label">P / L</div><div class="mobile-detail-value">¥{float(pf_row["損益(円)"]):+,.0f}</div></div>'
-                f'<div class="mobile-detail-item"><div class="mobile-detail-label">P / L %</div><div class="mobile-detail-value">{pnl_rate_text}</div></div>'
+                f'<div class="mobile-detail-item"><div class="mobile-detail-label">投資額</div><div class="mobile-detail-value">¥{float(pf_row["投資額(円)"]):,.0f}</div></div>'
+                f'<div class="mobile-detail-item"><div class="mobile-detail-label">評価額</div><div class="mobile-detail-value">¥{float(pf_row["評価額(円)"]):,.0f}</div></div>'
+                f'<div class="mobile-detail-item"><div class="mobile-detail-label">損益</div><div class="mobile-detail-value">¥{float(pf_row["損益(円)"]):+,.0f}</div></div>'
+                f'<div class="mobile-detail-item"><div class="mobile-detail-label">損益率</div><div class="mobile-detail-value">{pnl_rate_text}</div></div>'
                 '</div>'
                 f'<div class="mobile-detail-judge signal-{_status_tone(pf_row["判定"])}">{html.escape(_signal_en(pf_row["判定"]))}</div>'
                 '</div>'
@@ -3063,7 +3028,7 @@ with tabs[5]:
             unsafe_allow_html=True,
         )
 
-        with st.expander("Open detailed table"):
+        with st.expander("詳細を表で見る"):
             pf_display = pf.copy()
             pf_display["損益率"] = (pf_display["損益率"] * 100).round(2)
             st.dataframe(
@@ -3071,22 +3036,22 @@ with tabs[5]:
                 use_container_width=True,
                 hide_index=True,
                 column_config={
-                    "Cost (JPY)": st.column_config.NumberColumn(format="¥%.0f"),
-                    "Value (JPY)": st.column_config.NumberColumn(format="¥%.0f"),
-                    "P/L (JPY)": st.column_config.NumberColumn(format="¥%.0f"),
-                    "P/L %": st.column_config.NumberColumn(format="%.2f%%"),
+                    "投資額(円)": st.column_config.NumberColumn(format="¥%.0f"),
+                    "評価額(円)": st.column_config.NumberColumn(format="¥%.0f"),
+                    "損益(円)": st.column_config.NumberColumn(format="¥%.0f"),
+                    "損益率": st.column_config.NumberColumn(format="%.2f%%"),
                 },
             )
     elif not edited.dropna(subset=["Ticker"]).empty:
-        st.caption("Enter both shares and average cost to calculate portfolio value and P/L.")
+        st.caption("株数と平均取得単価の両方を入力すると、評価額と損益を計算します。")
 
     csv_export = edited.rename(
         columns={"株数": "Shares", "平均取得単価": "Avg Cost"}
     )
     csv = csv_export.to_csv(index=False).encode("utf-8-sig")
-    st.download_button("Download portfolio CSV", csv, "atlas50_portfolio.csv", "text/csv")
+    st.download_button("保有株CSVを保存", csv, "atlas50_portfolio.csv", "text/csv")
 
-    upl = st.file_uploader("Upload portfolio CSV", type=["csv"], key="pfupload")
+    upl = st.file_uploader("保有株CSVを読み込む", type=["csv"], key="pfupload")
     if upl is not None:
         try:
             csv_bytes = upl.getvalue()
@@ -3100,7 +3065,7 @@ with tabs[5]:
                         columns={"Shares": "株数", "Avg Cost": "平均取得単価"}
                     )
                 elif not {"Ticker", "株数", "平均取得単価"}.issubset(loaded.columns):
-                    raise ValueError("Missing required portfolio columns")
+                    raise ValueError("必要な保有株列が不足しています")
 
                 valid_tickers = {row[0] for row in COMPANIES}
                 loaded = loaded[["Ticker", "株数", "平均取得単価"]].copy()
@@ -3108,27 +3073,27 @@ with tabs[5]:
                 st.session_state.portfolio = loaded
                 st.session_state.portfolio_csv_digest = csv_digest
                 st.session_state.portfolio_editor_version += 1
-                st.session_state.portfolio_csv_flash = "Portfolio CSV loaded."
+                st.session_state.portfolio_csv_flash = "保有株CSVを読み込みました。"
                 st.rerun()
         except Exception:
-            st.error("The CSV file could not be read.")
+            st.error("CSVを読み込めませんでした。")
 
 
 # ------------------------------
 # 月予算
 # ------------------------------
 with tabs[6]:
-    _section_intro("AFFORDABILITY", "Budget", "Enter a JPY amount to see which stocks are affordable as at least one whole share.")
+    _section_intro("AFFORDABILITY", "予算で探す", "投資予算を入力すると、その金額で1株以上買える企業を確認できます。")
     budget = st.number_input(
-        "Budget (JPY)",
+        "投資予算（円）",
         min_value=0,
         value=MONTHLY_BUDGET_DEFAULT,
         step=1000,
     )
 
     buyable = df[(df["円換算価格"].notna()) & (df["円換算価格"] <= budget)].copy()
-    st.metric("STOCKS WITHIN BUDGET", f"{len(buyable)}")
-    st.caption("This is an affordability check only, not a recommendation.")
+    st.metric("予算内で1株買える企業", f"{len(buyable)}")
+    st.caption("これは「予算内で1株買えるか」を確認する機能で、投資推奨ではありません。")
 
     if not buyable.empty:
         buyable["予算で買える株数"] = buyable["円換算価格"].apply(
@@ -3148,8 +3113,8 @@ with tabs[6]:
                 f'<div class="mobile-detail-score">Score {float(budget_row["Atlas Score"]):.1f}</div>'
                 '</div>'
                 '<div class="mobile-detail-grid">'
-                f'<div class="mobile-detail-item"><div class="mobile-detail-label">Approx. 1 share</div><div class="mobile-detail-value">¥{float(budget_row["円換算価格"]):,.0f}</div></div>'
-                f'<div class="mobile-detail-item"><div class="mobile-detail-label">Whole shares in budget</div><div class="mobile-detail-value">{int(budget_row["予算で買える株数"])}</div></div>'
+                f'<div class="mobile-detail-item"><div class="mobile-detail-label">1株の目安</div><div class="mobile-detail-value">¥{float(budget_row["円換算価格"]):,.0f}</div></div>'
+                f'<div class="mobile-detail-item"><div class="mobile-detail-label">予算内株数</div><div class="mobile-detail-value">{int(budget_row["予算で買える株数"])}</div></div>'
                 '</div>'
                 f'<div class="mobile-detail-judge signal-{_status_tone(budget_row["判定"])}">{html.escape(_signal_en(budget_row["判定"]))}</div>'
                 '</div>'
@@ -3160,7 +3125,7 @@ with tabs[6]:
             unsafe_allow_html=True,
         )
 
-        with st.expander("Open table view"):
+        with st.expander("表で見る"):
             st.dataframe(
                 _ui_frame(buyable[[
                     "順位", "会社名", "国", "業種", "円換算価格",
@@ -3169,40 +3134,40 @@ with tabs[6]:
                 use_container_width=True,
                 hide_index=True,
                 column_config={
-                    "JPY Price": st.column_config.NumberColumn(format="¥%.0f"),
+                    "円換算価格": st.column_config.NumberColumn(format="¥%.0f"),
                     "Atlas Score": st.column_config.ProgressColumn(min_value=0, max_value=100, format="%.1f"),
                 },
             )
     else:
-        st.info("No stock in the current universe is affordable as one whole share within this budget.")
+        st.info("現在の予算で1株買える銘柄はありません。")
 
 
 # ------------------------------
 # 条件で探す
 # ------------------------------
 with tabs[7]:
-    _section_intro("CUSTOM FILTERS", "Screener", "Filter ATLAS 50 by score, returns, volume, geography and moving-average conditions. A match is not a recommendation.")
+    _section_intro("SCREENER", "条件で探す", "Score・騰落率・出来高・地域・移動平均線など、自分の条件で50銘柄を絞り込めます。")
 
     if st.session_state.watch_filter_flash:
         st.success(st.session_state.watch_filter_flash)
         st.session_state.watch_filter_flash = None
 
-    st.markdown("### Saved screens")
-    st.caption("Load a saved screen instantly. Full ATLAS settings can be backed up as JSON at the bottom of the app.")
+    st.markdown("### 保存した条件")
+    st.caption("保存した条件をワンタップで呼び出せます。ATLAS全体の設定は画面下部からJSONでバックアップできます。")
 
     saved_names = sorted(st.session_state.saved_watch_filters.keys())
     if saved_names:
         saved_select_col, saved_apply_col, saved_delete_col = st.columns([3, 1, 1])
         selected_saved_filter = saved_select_col.selectbox(
-            "Saved screen",
+            "保存した条件",
             saved_names,
             key="saved_watch_filter_select",
             label_visibility="collapsed",
         )
-        if saved_apply_col.button("Load", use_container_width=True, key="saved_watch_filter_apply"):
+        if saved_apply_col.button("呼び出す", use_container_width=True, key="saved_watch_filter_apply"):
             _apply_watch_config(st.session_state.saved_watch_filters[selected_saved_filter])
             st.rerun()
-        if saved_delete_col.button("Delete", use_container_width=True, key="saved_watch_filter_delete"):
+        if saved_delete_col.button("削除", use_container_width=True, key="saved_watch_filter_delete"):
             st.session_state.saved_watch_filters.pop(selected_saved_filter, None)
             st.rerun()
 
@@ -3215,15 +3180,15 @@ with tabs[7]:
             unsafe_allow_html=True,
         )
     else:
-        st.caption("No saved screens yet. Build one below and save it for later.")
+        st.caption("保存した条件はまだありません。下で条件を作って保存できます。")
 
     st.divider()
-    st.markdown("### Presets")
-    st.caption("Start with a preset, then adjust any value below.")
+    st.markdown("### 条件プリセット")
+    st.caption("まずプリセットを選び、そのあと数値を自由に調整できます。")
 
     preset1, preset2, preset3, preset4 = st.columns(4)
 
-    if preset1.button("UPTREND", use_container_width=True, key="watch_preset_up"):
+    if preset1.button("上向き確認", use_container_width=True, key="watch_preset_up"):
         st.session_state.watch_score = 60.0
         st.session_state.watch_1m = 0.0
         st.session_state.watch_3m = 0.0
@@ -3231,7 +3196,7 @@ with tabs[7]:
         st.session_state.watch_sma20 = True
         st.session_state.watch_sma60 = False
 
-    if preset2.button("MID-TERM TREND", use_container_width=True, key="watch_preset_mid"):
+    if preset2.button("中期トレンド", use_container_width=True, key="watch_preset_mid"):
         st.session_state.watch_score = 60.0
         st.session_state.watch_1m = 0.0
         st.session_state.watch_3m = 5.0
@@ -3239,7 +3204,7 @@ with tabs[7]:
         st.session_state.watch_sma20 = True
         st.session_state.watch_sma60 = True
 
-    if preset3.button("VOLUME SPIKE", use_container_width=True, key="watch_preset_volume"):
+    if preset3.button("出来高注目", use_container_width=True, key="watch_preset_volume"):
         st.session_state.watch_score = 0.0
         st.session_state.watch_1m = -100.0
         st.session_state.watch_3m = -100.0
@@ -3247,7 +3212,7 @@ with tabs[7]:
         st.session_state.watch_sma20 = False
         st.session_state.watch_sma60 = False
 
-    if preset4.button("RESET", use_container_width=True, key="watch_preset_reset"):
+    if preset4.button("リセット", use_container_width=True, key="watch_preset_reset"):
         st.session_state.watch_score = 0.0
         st.session_state.watch_1m = -100.0
         st.session_state.watch_3m = -100.0
@@ -3260,14 +3225,14 @@ with tabs[7]:
 
     w1, w2, w3 = st.columns(3)
     min_watch_score = w1.slider(
-        "Minimum Atlas Score",
+        "最低Atlas Score",
         min_value=0.0,
         max_value=100.0,
         step=1.0,
         key="watch_score",
     )
     min_watch_1m = w2.slider(
-        "Minimum 1M return",
+        "1か月騰落率の下限",
         min_value=-100.0,
         max_value=100.0,
         step=1.0,
@@ -3275,7 +3240,7 @@ with tabs[7]:
         key="watch_1m",
     )
     min_watch_3m = w3.slider(
-        "Minimum 3M return",
+        "3か月騰落率の下限",
         min_value=-100.0,
         max_value=200.0,
         step=1.0,
@@ -3285,11 +3250,11 @@ with tabs[7]:
 
     w4, w5, w6 = st.columns(3)
     min_watch_volume = w4.number_input(
-        "Minimum volume ratio",
+        "最低出来高倍率",
         min_value=0.0,
         max_value=10.0,
         step=0.1,
-        help="Current volume divided by the 20-day average. 1.5 means roughly 1.5x the recent average.",
+        help="現在の出来高 ÷ 20日平均出来高です。1.5なら直近平均の約1.5倍です。",
         key="watch_volume",
     )
 
@@ -3298,10 +3263,10 @@ with tabs[7]:
     if current_watch_region not in region_options:
         st.session_state.watch_region = "すべて"
     watch_region = w5.selectbox(
-        "Region",
+        "地域",
         region_options,
         key="watch_region",
-        format_func=lambda x: "All" if x == "すべて" else _region_en(x),
+        format_func=lambda x: "すべて" if x == "すべて" else _region_en(x),
     )
 
     watch_sector_series = df["業種"].map(SECTOR_GROUPS).fillna(df["業種"])
@@ -3310,49 +3275,49 @@ with tabs[7]:
     if current_watch_sector not in sector_group_options:
         st.session_state.watch_sector_group = "すべて"
     watch_sector_group = w6.selectbox(
-        "Sector group",
+        "業種グループ",
         sector_group_options,
         key="watch_sector_group",
-        format_func=lambda x: "All" if x == "すべて" else _sector_group_en(x),
+        format_func=lambda x: "すべて" if x == "すべて" else _sector_group_en(x),
     )
 
     t1, t2 = st.columns(2)
     only_above_sma20 = t1.toggle(
-        "Above 20-day MA only",
+        "20日線より上だけ",
         key="watch_sma20",
     )
     only_above_sma60 = t2.toggle(
-        "Above 60-day MA only",
+        "60日線より上だけ",
         key="watch_sma60",
     )
 
     sort_label = st.selectbox(
-        "Sort by",
+        "並び順",
         WATCH_SORT_OPTIONS,
         key="watch_sort",
         format_func=lambda x: WATCH_SORT_EN.get(x, x),
     )
 
     watch_limit = st.selectbox(
-        "Cards to show",
+        "表示件数",
         [12, 24, 50],
         key="watch_limit",
-        help="Limit how many matching cards are shown on screen.",
+        help="画面に表示する一致銘柄の件数を選びます。",
     )
 
     save_name_col, save_button_col = st.columns([3, 1])
     watch_save_name = save_name_col.text_input(
-        "Name this screen",
-        placeholder="e.g. Volume + trend",
+        "この条件に名前を付ける",
+        placeholder="例：出来高＋上向き",
         key="watch_save_name",
     ).strip()
-    if save_button_col.button("Save screen", use_container_width=True, key="watch_save_button"):
+    if save_button_col.button("条件を保存", use_container_width=True, key="watch_save_button"):
         if not watch_save_name:
-            st.warning("Enter a name before saving this screen.")
+            st.warning("保存する条件名を入力してください。")
         else:
             saved_name = watch_save_name[:40]
             st.session_state.saved_watch_filters[saved_name] = _watch_config_from_state()
-            st.session_state.watch_filter_flash = f"Saved: {saved_name}"
+            st.session_state.watch_filter_flash = f"保存しました: {saved_name}"
             st.rerun()
 
     watch_df = df.copy()
@@ -3383,37 +3348,37 @@ with tabs[7]:
 
     active_conditions = [f"Score ≥ {min_watch_score:.0f}"]
     if min_watch_1m > -100:
-        active_conditions.append(f"1M ≥ {min_watch_1m:+.0f}%")
+        active_conditions.append(f"1か月 ≥ {min_watch_1m:+.0f}%")
     if min_watch_3m > -100:
-        active_conditions.append(f"3M ≥ {min_watch_3m:+.0f}%")
+        active_conditions.append(f"3か月 ≥ {min_watch_3m:+.0f}%")
     if min_watch_volume > 0:
-        active_conditions.append(f"Volume ≥ {min_watch_volume:.1f}x")
+        active_conditions.append(f"出来高 ≥ {min_watch_volume:.1f}x")
     if watch_region != "すべて":
-        active_conditions.append(f"Region: {_region_en(watch_region)}")
+        active_conditions.append(f"地域: {_region_en(watch_region)}")
     if watch_sector_group != "すべて":
-        active_conditions.append(f"Sector: {_sector_group_en(watch_sector_group)}")
+        active_conditions.append(f"業種: {_sector_group_en(watch_sector_group)}")
     if only_above_sma20:
-        active_conditions.append("Above 20D MA")
+        active_conditions.append("20日線より上")
     if only_above_sma60:
-        active_conditions.append("Above 60D MA")
+        active_conditions.append("60日線より上")
 
-    st.info("**ACTIVE FILTERS**  " + " | ".join(active_conditions))
+    st.info("**現在の条件**  " + " | ".join(active_conditions))
 
     r1, r2, r3, r4 = st.columns(4)
-    r1.metric("MATCHES", f"{len(watch_df)}")
+    r1.metric("条件一致", f"{len(watch_df)}")
     if not watch_df.empty:
-        r2.metric("AVG SCORE", f"{watch_df['Atlas Score'].mean():.1f}")
-        r3.metric("AVG 1M", f"{watch_df['1か月'].mean() * 100:+.2f}%")
-        r4.metric("MAX VOLUME", f"{watch_df['出来高倍率'].max():.2f}x")
+        r2.metric("平均Score", f"{watch_df['Atlas Score'].mean():.1f}")
+        r3.metric("平均1か月", f"{watch_df['1か月'].mean() * 100:+.2f}%")
+        r4.metric("最大出来高倍率", f"{watch_df['出来高倍率'].max():.2f}x")
     else:
-        r2.metric("AVG SCORE", "-")
-        r3.metric("AVG 1M", "-")
-        r4.metric("MAX VOLUME", "-")
+        r2.metric("平均Score", "-")
+        r3.metric("平均1か月", "-")
+        r4.metric("最大出来高倍率", "-")
 
     if watch_df.empty:
-        st.warning("No stocks match the current filters. Try relaxing one or more conditions.")
+        st.warning("現在の条件に一致する銘柄はありません。条件を少し緩めてみてください。")
     else:
-        st.caption(f"Showing {len(watch_display_df)} of {len(watch_df)} matches")
+        st.caption(f"表示中: {len(watch_display_df)} / {len(watch_df)}社")
 
         watch_cards = []
         for _, watch_row in watch_display_df.iterrows():
@@ -3432,12 +3397,12 @@ with tabs[7]:
                 f'<div class="mobile-detail-score">Score {float(watch_row["Atlas Score"]):.1f}</div>'
                 '</div>'
                 '<div class="mobile-detail-grid">'
-                f'<div class="mobile-detail-item"><div class="mobile-detail-label">1M</div><div class="mobile-detail-value">{one_month_text}</div></div>'
-                f'<div class="mobile-detail-item"><div class="mobile-detail-label">3M</div><div class="mobile-detail-value">{three_month_text}</div></div>'
-                f'<div class="mobile-detail-item"><div class="mobile-detail-label">Volume ratio</div><div class="mobile-detail-value">{volume_text}</div></div>'
-                f'<div class="mobile-detail-item"><div class="mobile-detail-label">vs 20D MA</div><div class="mobile-detail-value">{sma20_text}</div></div>'
+                f'<div class="mobile-detail-item"><div class="mobile-detail-label">1か月</div><div class="mobile-detail-value">{one_month_text}</div></div>'
+                f'<div class="mobile-detail-item"><div class="mobile-detail-label">3か月</div><div class="mobile-detail-value">{three_month_text}</div></div>'
+                f'<div class="mobile-detail-item"><div class="mobile-detail-label">出来高倍率</div><div class="mobile-detail-value">{volume_text}</div></div>'
+                f'<div class="mobile-detail-item"><div class="mobile-detail-label">20日線比</div><div class="mobile-detail-value">{sma20_text}</div></div>'
                 '</div>'
-                f'<div class="mobile-detail-judge signal-{_status_tone(watch_row["判定"])}">SIGNAL: {html.escape(_signal_en(watch_row["判定"]))}</div>'
+                f'<div class="mobile-detail-judge signal-{_status_tone(watch_row["判定"])}">判定: {html.escape(_signal_en(watch_row["判定"]))}</div>'
                 '</div>'
             )
 
@@ -3446,7 +3411,7 @@ with tabs[7]:
             unsafe_allow_html=True,
         )
 
-        with st.expander("Open all matches in a table"):
+        with st.expander("条件一致銘柄を表で見る"):
             watch_table = watch_df[[
                 "順位", "会社名", "国", "業種グループ", "1か月", "3か月",
                 "出来高倍率", "20日線比", "60日線比", "Atlas Score", "判定",
@@ -3459,44 +3424,44 @@ with tabs[7]:
                 use_container_width=True,
                 hide_index=True,
                 column_config={
-                    "1M": st.column_config.NumberColumn(format="%.2f%%"),
-                    "3M": st.column_config.NumberColumn(format="%.2f%%"),
-                    "Volume Ratio": st.column_config.NumberColumn(format="%.2fx"),
-                    "vs 20D MA": st.column_config.NumberColumn(format="%.2f%%"),
-                    "vs 60D MA": st.column_config.NumberColumn(format="%.2f%%"),
+                    "1か月": st.column_config.NumberColumn(format="%.2f%%"),
+                    "3か月": st.column_config.NumberColumn(format="%.2f%%"),
+                    "出来高倍率": st.column_config.NumberColumn(format="%.2fx"),
+                    "20日線比": st.column_config.NumberColumn(format="%.2f%%"),
+                    "60日線比": st.column_config.NumberColumn(format="%.2f%%"),
                     "Atlas Score": st.column_config.ProgressColumn(min_value=0, max_value=100, format="%.1f"),
                 },
             )
 
     st.caption(
-        "The screener filters current ATLAS 50 data mechanically. A match does not imply future gains or investment performance."
+        "条件検索はATLAS 50内の現在データを機械的に絞り込む観察ツールです。条件一致は将来の上昇や投資成果を意味しません。"
     )
 
 
 # ------------------------------
 # Atlas設定の保存
 # ------------------------------
-with st.expander("Back up ATLAS settings"):
-    st.caption("Save your watchlist, portfolio, saved screens and current screen settings in one JSON file.")
+with st.expander("ATLAS設定をバックアップ"):
+    st.caption("ウォッチリスト・保有株・保存条件・現在の検索条件を1つのJSONファイルに保存できます。")
     st.download_button(
-        "Download ATLAS settings JSON",
+        "ATLAS設定JSONを保存",
         data=_settings_json_bytes(),
         file_name="atlas50_settings.json",
         mime="application/json",
         use_container_width=True,
         key="atlas_setup_download_global",
     )
-    st.caption("For portfolio-only backup, you can also use CSV inside the Portfolio tab.")
+    st.caption("保有株だけを保存する場合は、保有株タブのCSVも利用できます。")
 
 # ------------------------------
 # エラー・注意書き
 # ------------------------------
 if errors:
-    with st.expander("Data-load errors"):
+    with st.expander("データ取得エラー"):
         st.code("\n".join(errors[:50]))
 
 st.divider()
 st.caption(
     f"ATLAS 50 V{APP_VERSION} {APP_LABEL} | "
-    "Atlas Score is a learning and monitoring indicator for price trends. It is not a buy/sell recommendation or a guarantee of future performance. Market, FX and news data can be delayed or temporarily unavailable; always review source data alongside AI notes."
+    "Atlas Scoreは価格トレンドを整理するための学習・監視指標です。買い推奨・売り推奨・将来の利益保証ではありません。株価・為替・ニュースには遅延や取得失敗があり、AI解説とあわせて元データも確認してください。"
 )
